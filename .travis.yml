@@ -1,0 +1,11 @@
+language: python
+python:
+# Pypy only implements Python 3.2, which does not have `yield from` syntax.
+#  - "pypy3"
+  - "3.3"
+  - "3.4"
+#  - "3.5"
+install:
+  - pip install -r requirements.txt
+script:
+  - make -k -j`nproc`
