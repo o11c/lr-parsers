@@ -5,5 +5,5 @@ pytest>=2.6.3
 pytest-cov>=1.8.1
 
 # Requires pull requests that are not merged yet.
-#git://github.com/JukkaL/mypy.git
-git://github.com/o11c/mypy.git
+#git+git://github.com/JukkaL/mypy.git
+git+git://github.com/o11c/mypy.git
