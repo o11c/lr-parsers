@@ -26,7 +26,7 @@ class Shift(Action):
         self._state = state
 
     def __repr__(self) -> str:
-        return 'Shift(<state %d>)' % (self._state._get_number())
+        return 'Shift(<state %d>)' % (self._state._number)
 
 class Reduce(Action):
     __slots__ = ('_rule',)
@@ -48,19 +48,15 @@ class Goto(BaseAction):
         self._state = state
 
     def __repr__(self) -> str:
-        return 'Goto(<state %d>)' % (self._state._get_number())
+        return 'Goto(<state %d>)' % (self._state._number)
 
 
 class StateId:
     __slots__ = ('_number', '_info')
 
     def __init__(self, number: int, info: 'Automaton') -> None:
-        self._number = number
+        self._number = number # type: int
         self._info = weakref.ref(info)
-
-    # work around a mypy bug
-    def _get_number(self) -> int:
-        return self._number
 
     def __repr__(self) -> str:
         return '<StateId for %r>' % (self._data(),)

@@ -39,7 +39,7 @@ class SymbolId:
 
     def _grammar_repr(self) -> str:
         data = self._data()
-        name = data._get_name()
+        name = data._name
         return name
 
 class SymbolData:
@@ -47,16 +47,12 @@ class SymbolData:
 
     def __init__(self, id: SymbolId, name: str, is_term: bool) -> None:
         self._id = id
-        self._name = name
+        self._name = name # type: str
         self._is_term = is_term
 
     def __repr__(self) -> str:
         x = 'terminal' if self._is_term else 'nonterminal'
         return '<SymbolData %s #%d %s>' % (x, self._id._number, self._name)
-
-    def _get_name(self) -> str:
-        # work around a mypy bug
-        return self._name
 
 def _fix_sym(sym: str, is_term: bool) -> str:
     if is_term and len(sym) > 2:
