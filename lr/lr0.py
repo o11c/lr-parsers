@@ -82,10 +82,6 @@ class ItemSet(AbstractItemSet):
     def _kernel(items: List[Item]) -> Sequence[Tuple[RuleId, int]]:
         return as_tuple([it._kernel() for it in items])
 
-    def seed(self, item: Item) -> None:
-        assert self._kernel_size is None
-        self._items.append(item)
-
     def close(self, grammar: Grammar) -> ClosureTuple:
         rv_nonterminals = [] # type: List[SymbolId]
         rv_terminals = [] # type: List[SymbolId]
@@ -107,8 +103,8 @@ class ItemSet(AbstractItemSet):
                 rv_nonterminals.append(rv)
                 for rvld in rvl:
                     rvli = rvld._id
-                    if rvli in added_rules:
-                        continue
+                    # above, rv in rv_set
+                    assert rvli not in added_rules
                     added_rules.add(rvli)
                     self._items.append(Item(rvli, 0))
             else:
@@ -117,13 +113,13 @@ class ItemSet(AbstractItemSet):
         return ClosureTuple(rv_nonterminals, rv_terminals, rv_set)
 
     def is_initial_state(self) -> bool:
-        return self._is_core_state() and self._items[0]._index == 0
+        return self._is_core_state(False) and self._items[0]._index == 0
     def is_penultimate_state(self) -> bool:
-        return self._is_core_state() and self._items[0]._index == 1
+        return self._is_core_state(False) and self._items[0]._index == 1
     def is_final_state(self) -> bool:
-        return self._is_core_state() and self._items[0]._index == 2
-    def _is_core_state(self) -> bool:
-        if len(self._items) != 1:
+        return self._is_core_state(True) and self._items[0]._index == 2
+    def _is_core_state(self, final: bool) -> bool:
+        if final and len(self._items) != 1:
             return False
         rule = self._items[0]._rule._data()
         if len(rule._rhs) != 2:
@@ -189,12 +185,6 @@ def _add_item_set(automaton: Automaton, prev: Optional[ItemSet], sym: Optional[S
         assert sym2 not in item_set._state._gotos
         item_set._state._gotos[sym2] = Goto(is2._state._id)
     for sym2 in clt.terminal_list:
-        if False and sym2._number == 0:
-            # My old code this but I think it's better not to?
-            # TODO check what happens in Runtime when you can't shift eof
-            # should be an error instead.
-            item_set._state._actions[sym2] = None
-            continue
         is2 = _add_item_set(automaton, item_set, sym2, lst, grammar, kernels, 'shift')
         # This replaces the reduce if present, but from the recursively
         # called function on the line before.

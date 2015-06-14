@@ -19,7 +19,7 @@ class Runtime:
         self._value_stack = [] # type: List[Value]
 
     def __repr__(self) -> str:
-        return '<Runtime in state #%r with %d values from %r>' % (self._state_stack[0]._number, len(self._value_stack), self._automaton)
+        return '<Runtime in state #%d/%d with %d values>' % (self._state_stack[-1]._number, len(self._automaton._data), len(self._value_stack))
 
     def feed_all(self, toks: Iterable[Terminal]) -> None:
         for tok in toks:
@@ -47,12 +47,12 @@ class Runtime:
                 trampoline_state = self._state_stack[-1]
                 try:
                     new_state = trampoline_state._data()._gotos[rule._data()._lhs]._state
-                except KeyError:
-                    assert False, 'should not be reachable I think'
+                except KeyError: # pragma: no cover
+                    assert False, 'should not be reachable I think' # pragma: no cover
                 self._state_stack.append(new_state)
                 self._value_stack.append(new_value)
                 continue
-            assert False, 'unknown subclass'
+            assert False, 'unknown subclass' # pragma: no cover
 
     def get(self) -> Value:
         assert len(self._state_stack) == 3

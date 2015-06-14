@@ -106,10 +106,10 @@ class AbstractItemSet(metaclass=ABCMeta):
 
     @abstractmethod
     def is_initial_state(self) -> bool:
-        pass
+        pass # pragma: no cover
     @abstractmethod
     def is_penultimate_state(self) -> bool:
-        pass
+        pass # pragma: no cover
     @abstractmethod
     def is_final_state(self) -> bool:
-        pass
+        pass # pragma: no cover

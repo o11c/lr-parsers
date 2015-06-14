@@ -183,7 +183,7 @@ class Grammar:
             if lhs_id != prev:
                 for_this_sym = [] # type: List[RuleData]
                 if lhs_id in self._by_symbol:
-                    raise GrammarError('duplicate: %r' % lhs)
+                    raise GrammarError('nonadjacent: %r' % lhs)
                 self._by_symbol[lhs_id] = for_this_sym
             prev = lhs_id
             datum = RuleData(RuleId(i, self), lhs_sym, len(for_this_sym), rhs_sym)
@@ -211,10 +211,10 @@ class Grammar:
             yield lhs, rhs[:-1].split()
 
     @staticmethod
-    def parse(symbols: SymbolsInfo, lines: Union[str, Iterable[str]]) -> 'Grammar':
+    def parse(symbols: SymbolsInfo, lines: Union[str, Iterable[str]], start: Optional[str] = None) -> 'Grammar':
         if isinstance(lines, str):
             lines = lines.split('\n')
-        return Grammar(symbols, Grammar._do_parse(lines))
+        return Grammar(symbols, Grammar._do_parse(lines), start)
 
     def all(self, name: SymbolId) -> Optional[List[RuleData]]:
         try:

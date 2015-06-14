@@ -12,8 +12,10 @@ prep:
 all: mypy
 mypy: prep
 	${MYPY} --html-report mypy-report ./mypy-hack.py
+	! grep -o '<td>[0-9.]*% imprecise' mypy-report/index.html | grep -v '<td>0.0% imprecise'
 
 .PHONY: coverage
 all: coverage
 coverage: prep
 	${PYTHON} -m pytest -v --cov lr/ --cov-report=html lr/
+	! grep "<td class='right'>" htmlcov/index.html | grep -v 100%
