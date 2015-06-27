@@ -20,8 +20,8 @@ class Terminal(Value):
     def __repr__(self) -> str:
         sym = self._sym._data()._name
         text = self._text
-        if sym == text:
-            return repr(text)
+        if sym == text or not text:
+            return repr(sym)
         return '%s(%r)' % (sym, text)
 
 class Nonterminal(Value):

@@ -3,6 +3,7 @@
 /mypy-hack.py
 /.coverage
 /htmlcov/
+/coverage.xml
 
 /.tox/
 /MANIFEST

@@ -5,7 +5,7 @@ from distutils.core import setup
 
 setup(
         name='lr-parsers',
-        version='0.1',
+        version='0.2',
         description='LR state machine and various parser generators',
         author='Ben Longbons',
         author_email='b.r.longbons@gmail.com',

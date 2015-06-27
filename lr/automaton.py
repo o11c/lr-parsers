@@ -74,7 +74,7 @@ class StateData:
         self._creator = creator
 
     def __repr__(self) -> str:
-        return '<StateData #%d with %d actions, %d gotos; from\n  %r>' % (self._id._number, len(self._actions), len(self._gotos), self._creator)
+        return '<StateData #%d with %d actions, %d gotos\n  %r>' % (self._id._number, len(self._actions), len(self._gotos), self._creator)
 
 class Automaton:
     __slots__ = ('_data', '__weakref__')

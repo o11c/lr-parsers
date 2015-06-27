@@ -5,12 +5,16 @@ import pytest
 from lr.bison import compute_automaton
 from lr.runtime import Runtime
 
+from . import grammar_examples
+
 
 @pytest.mark.xfail
 def test_bison_minimal1() -> None:
-    from .grammar_examples import minimal1_grammar as grammar, minimal1_input1 as input
+    ex = grammar_examples.lr0.ex_minimal1
+    grammar = ex.grammar
+    input, output = ex.good_inputs[0]
     automaton = compute_automaton(grammar)
     runtime = Runtime(automaton)
     runtime.feed_all(input)
     val = runtime.get()
-    assert repr(val) == ".'term'"
+    assert repr(val) == output

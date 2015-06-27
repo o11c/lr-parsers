@@ -122,6 +122,9 @@ class SymbolsInfo:
     def all_terminals(self) -> List[SymbolId]:
         return [d._id for d in self._data[:self._num_terminals]]
 
+    def all_nonterminals(self) -> List[SymbolId]:
+        return [d._id for d in self._data[self._num_terminals:]]
+
 class RuleId:
     __slots__ = ('_number', '_info')
 
@@ -162,29 +165,32 @@ def _gen_rule_iter(rules: Iterable[Tuple[str, List[str]]], start: Optional[str])
     yield from rules
 
 class Grammar:
-    __slots__ = ('_symbols', '_data', '_by_symbol', '__weakref__')
+    __slots__ = ('_symbols', '_data', '_by_symbol_lhs', '_by_symbol_rhs', '__weakref__')
 
     def __init__(self, symbols: SymbolsInfo, data: Iterable[Tuple[str, List[str]]], start: Optional[str] = None) -> None:
         self._symbols = symbols
         self._data = [] # type: List[RuleData]
-        self._by_symbol = {} # type: Dict[int, List[RuleData]]
+        self._by_symbol_lhs = {} # type: Dict[SymbolId, List[RuleId]]
+        self._by_symbol_rhs = {} # type: Dict[SymbolId, List[Tuple[RuleId, int]]]
 
-        prev = None # type: int
+        prev = None # type: SymbolId
 
         for (lhs, rhs) in _gen_rule_iter(data, start):
             i = len(self._data)
             lhs_sym = symbols.get(lhs, False)
-            lhs_id = lhs_sym._number
-            rhs_sym = [symbols.get(r, True) for r in rhs]
-            if lhs_id != prev:
-                for_this_sym = [] # type: List[RuleData]
-                if lhs_id in self._by_symbol:
+            rhs_syms = [symbols.get(r, True) for r in rhs]
+            if lhs_sym != prev:
+                for_this_sym = [] # type: List[RuleId]
+                if lhs_sym in self._by_symbol_lhs:
                     raise GrammarError('nonadjacent: %r' % lhs)
-                self._by_symbol[lhs_id] = for_this_sym
-            prev = lhs_id
-            datum = RuleData(RuleId(i, self), lhs_sym, len(for_this_sym), rhs_sym)
+                self._by_symbol_lhs[lhs_sym] = for_this_sym
+            prev = lhs_sym
+            datum = RuleData(RuleId(i, self), lhs_sym, len(for_this_sym), rhs_syms)
             self._data.append(datum)
-            for_this_sym.append(datum)
+            for_this_sym.append(datum._id)
+            for i, rhs_sym in enumerate(rhs_syms):
+                bsr = self._by_symbol_rhs.setdefault(rhs_sym, [])
+                bsr.append((datum._id, i))
 
     def __repr__(self) -> str:
         rule_strs = [x._grammar_repr() for x in self._data]
@@ -212,13 +218,18 @@ class Grammar:
             lines = lines.split('\n')
         return Grammar(symbols, Grammar._do_parse(lines), start)
 
-    def all(self, name: SymbolId) -> Optional[List[RuleData]]:
+    def all(self, name: SymbolId) -> Optional[List[RuleId]]:
         try:
-            rv = self._by_symbol[name._number]
+            rv = self._by_symbol_lhs[name]
         except KeyError:
+            assert name._data()._is_term
             return None
         else:
+            assert not name._data()._is_term
             return rv
+
+    def uses(self, name: SymbolId) -> List[Tuple[RuleId, int]]:
+        return self._by_symbol_rhs.get(name, [])
 
     def all_terminals(self) -> List[SymbolId]:
         return self._symbols.all_terminals()

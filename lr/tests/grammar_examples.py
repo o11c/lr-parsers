@@ -2,8 +2,12 @@ import typing
 
 from typing import (
         List,
+        Optional,
         Set,
+        Tuple,
 )
+
+from lr._mypy_bugs import module_decorator as module
 
 from lr.grammar import (
         Grammar,
@@ -42,10 +46,10 @@ def grammar_parse(source: str) -> Grammar:
     grammar = Grammar.parse(symbols, source)
     return grammar
 
-def input_split(grammar: Grammar, source: str, split_char: str) -> List[Terminal]:
+def input_split(grammar: Grammar, source: str, split_char: Optional[str] = None) -> List[Terminal]:
     rv = [] # type: List[Terminal]
     for word in source.split():
-        if split_char in word:
+        if split_char is not None and split_char in word:
             sym, txt = word.split(split_char)
         else:
             if word.isalnum():
@@ -55,40 +59,243 @@ def input_split(grammar: Grammar, source: str, split_char: str) -> List[Terminal
                 txt = word
                 sym = repr(txt)
         rv.append(Terminal(grammar._symbols.get(sym, True), txt))
-    rv.append(Terminal(grammar._symbols.get('$eof', True), ''))
+    rv.append(Terminal(grammar._symbols.get('$eof', True), ""))
     return rv
 
+class GrammarAndInputs:
+    __slots__ = ('grammar', 'good_inputs', 'bad_inputs')
 
-minimal1_grammar = grammar_parse('''
-Root: term;
-''')
-minimal1_input0 = input_split(minimal1_grammar, '', ':')
-minimal1_input1 = input_split(minimal1_grammar, 'term', ':')
-minimal1_input2 = input_split(minimal1_grammar, 'term term', ':')
-
-minimal2_grammar = grammar_parse('''
-Root: term term;
-''')
-minimal2_input0 = input_split(minimal2_grammar, '', ':')
-minimal2_input1 = input_split(minimal2_grammar, 'term', ':')
-minimal2_input2 = input_split(minimal2_grammar, 'term term', ':')
-minimal2_input3 = input_split(minimal2_grammar, 'term term term', ':')
-
-evil_grammar = grammar_parse('''
-Root: A;
-Root: B;
-A: term;
-B: term;
-''')
+    def __init__(self, grammar: str, good_inputs: List[Tuple[str, str]], short_inputs: List[str], bad_inputs: List[str], split: Optional[str]) -> None:
+        self.grammar = grammar_parse(grammar)
+        self.good_inputs = [(input_split(self.grammar, i, split), o) for i, o in good_inputs]
+        self.bad_inputs = [input_split(self.grammar, i, split) for i in short_inputs]
+        self.bad_inputs += [input_split(self.grammar, i, split)[:-1] for i in bad_inputs]
 
 
-lr0_grammar = grammar_parse('''
-Sums: Sums '+' Products;
-Sums: Products;
-Products: Products '*' Value;
-Products: Value;
-Value: '+' Value;
-Value: int;
-Value: id;
-''')
-lr0_input = input_split(lr0_grammar, 'int:0 + + int:1 * id:a', ':')
+@module
+class lr0:
+    ex_minimal1 = GrammarAndInputs('''
+            Root: term;
+        ''', [
+            ('term', ".'term'"),
+        ], [
+            '',
+        ], [
+            'term term',
+        ], ':')
+
+    ex_minimal2 = GrammarAndInputs('''
+            Root: term term;
+        ''', [
+            ('term term', "Root0('term', 'term')"),
+        ], [
+            '',
+            'term',
+        ], [
+            'term term term',
+        ], ':')
+
+    ex_kern = GrammarAndInputs('''
+            S: a C a;
+            S: b C b;
+            C: c;
+        ''', [
+            ('a c a', "S0('a', .'c', 'a')"),
+            ('b c b', "S1('b', .'c', 'b')"),
+        ], [
+            '',
+            'a',
+            'a c',
+            'b',
+            'b c',
+        ], [
+            'a a',
+            'b b',
+            'a b',
+            'b a',
+            'a c b',
+            'b c a',
+        ], None)
+
+    ex_follow1 = GrammarAndInputs('''
+            S: C a a;
+            S: C a b;
+            C: c;
+        ''', [
+            ('c a a', "S0(.'c', 'a', 'a')"),
+            ('c a b', "S1(.'c', 'a', 'b')"),
+        ], [
+            '',
+            'c',
+            'c a',
+        ], [
+            'a',
+            'b',
+            'c b',
+            'c a c',
+        ], None)
+
+    ex_follow2 = GrammarAndInputs('''
+            S: C A a;
+            S: C A b;
+            A: a;
+            C: c;
+        ''', [
+            ('c a a', "S0(.'c', .'a', 'a')"),
+            ('c a b', "S1(.'c', .'a', 'b')"),
+        ], [
+            '',
+            'c',
+            'c a',
+        ], [
+            'a',
+            'b',
+            'c b',
+            'c a c',
+        ], None)
+
+@module
+class slr:
+    example = GrammarAndInputs('''
+            Sums: Sums '+' Products;
+            Sums: Products;
+            Products: Products '*' Value;
+            Products: Value;
+            Value: '+' Value;
+            Value: int;
+            Value: id;
+            Value: '(' Sums ')';
+        ''', [
+            ('( int:0 ) + + int:1 * id:a', "Sums0(..Value3('(', ...int('0'), ')'), '+', Products0(.Value0('+', .int('1')), '*', .id('a')))"),
+        ], [
+            '',
+            'int:1 *',
+        ], [
+            'int:1 * *',
+        ], ':')
+
+    ex1 = GrammarAndInputs('''
+            S: E;
+            E: t E;
+            E: t;
+        ''', [
+            ('t', "..'t'"),
+            ('t t', ".E0('t', .'t')"),
+            ('t t t', ".E0('t', E0('t', .'t'))"),
+        ], [
+            '',
+        ], [
+        ], None)
+
+    ex2 = GrammarAndInputs('''
+            E: A a;
+            E: B b;
+            A: c;
+            B: c;
+        ''', [
+            ('c a', "E0(.'c', 'a')"),
+            ('c b', "E1(.'c', 'b')"),
+        ], [
+            '',
+            'c',
+        ], [
+            'a',
+            'b',
+            'c c',
+            'c a a',
+            'c a b',
+            'c a c',
+        ], None)
+
+@module
+class lalr:
+    ex1 = GrammarAndInputs('''
+            S: A a;
+            S: b A c;
+            S: d c;
+            S: b d a;
+            A: d;
+        ''', [
+            ('d a', ""),
+            ('b d c', ""),
+            ('d c', ""),
+            ('b d a', ""),
+        ], [
+            '',
+        ], [
+        ], None)
+
+    ex2 = GrammarAndInputs('''
+            E: L '=' R;
+            E: R;
+            L: '*' R;
+            L: id;
+            R: L;
+        ''', [
+        ], [
+        ], [
+        ], None)
+
+@module
+class lr1:
+    ex1 = GrammarAndInputs('''
+            S: a E c;
+            S: a F d;
+            S: b F c;
+            S: b E d;
+            E: e;
+            F: e;
+        ''', [
+            ('a e c', ""),
+            ('a e d', ""),
+            ('b e c', ""),
+            ('b e d', ""),
+        ], [
+            '',
+        ], [
+        ], None)
+
+@module
+class lr2:
+    ex1 = GrammarAndInputs('''
+            S: a A a;
+            S: b A b;
+            A: a;
+            A: a a;
+        ''', [
+            ('a a a', "'a' .'a' 'a'"),
+            ('a a a a', "'a' A1('a' 'a') 'a'"),
+            ('b a b', "'b' .'a' 'b'"),
+            ('b a a b', "'b' A1('a' 'a') 'b'"),
+        ], [
+        ], [
+        ], None)
+
+@module
+class ambiguous:
+    # not a GrammarAndInputs
+    evil1_grammar = grammar_parse('''
+            Root: A;
+            Root: B;
+            A: term;
+            B: term;
+        ''')
+
+    evil2_grammar = grammar_parse('''
+            Expr: Expr '*' Val;
+            Expr: Val '+' Expr;
+            Expr: Val;
+        ''')
+    # input: Val + Val * Val
+    #   1: (Val + (Val)) * Val
+    #   2: Val + ((Val) * Val)
+
+@module
+class other:
+    # examples that either are or are not LL(1), LL(k), and LL(*)
+
+    misc1_grammar = grammar_parse('''
+        S: F;
+        S: '(' S '+' F ')';
+        F: a;
+    ''')
