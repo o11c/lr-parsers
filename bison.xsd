@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- vim: set sts=2 sw=2: -->
+<!--
+  Schema for `bison -x` output, believed complete as of version 3.0.2.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <!-- enum types -->
+  <xs:simpleType name="terminal-usefulness">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="useful"/>
+      <xs:enumeration value="unused-in-grammar"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="nonterminal-usefulness">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="useful"/>
+      <xs:enumeration value="useless-in-grammar"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="rule-usefulness">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="useful"/>
+      <xs:enumeration value="useless-in-grammar"/>
+      <xs:enumeration value="useless-in-parser"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="transition-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="shift"/>
+      <xs:enumeration value="goto"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="bool">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="false"/>
+      <xs:enumeration value="true"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="reduction-rule">
+    <xs:union memberTypes="xs:int">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="accept"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+  <xs:simpleType name="assoc">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="left"/>
+      <xs:enumeration value="right"/>
+      <xs:enumeration value="nonassoc"/>
+      <xs:enumeration value="precedence"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="resolution-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="shift"/>
+      <xs:enumeration value="reduce"/>
+      <xs:enumeration value="error"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="error-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="nonassociative"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- root element -->
+  <xs:element name="bison-xml-report">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="filename" type="xs:string"/>
+        <xs:element name="grammar">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="rules">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="rule" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="lhs" type="xs:string"/>
+                          <xs:element name="rhs">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:choice>
+                                  <xs:element name="symbol" type="xs:string" maxOccurs="unbounded"/>
+                                  <xs:element name="empty">
+                                    <xs:complexType/>
+                                  </xs:element>
+                                </xs:choice>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="number" type="xs:int" use="required"/>
+                        <xs:attribute name="usefulness" type="rule-usefulness" use="required"/>
+                        <xs:attribute name="percent_prec" type="xs:string" use="optional"/>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="terminals">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="terminal" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence/>
+                        <xs:attribute name="symbol-number" type="xs:int" use="required"/>
+                        <xs:attribute name="token-number" type="xs:int" use="required"/>
+                        <xs:attribute name="name" type="xs:string" use="required"/>
+                        <xs:attribute name="usefulness" type="terminal-usefulness" use="required"/>
+                        <xs:attribute name="prec" type="xs:int" use="optional"/>
+                        <xs:attribute name="assoc" type="assoc" use="optional"/>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="nonterminals">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="nonterminal" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence/>
+                        <xs:attribute name="symbol-number" type="xs:int" use="required"/>
+                        <xs:attribute name="name" type="xs:string" use="required"/>
+                        <xs:attribute name="usefulness" type="nonterminal-usefulness" use="required"/>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="automaton">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="state" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="itemset">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="item" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="lookaheads" minOccurs="0">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element name="symbol" type="xs:string" maxOccurs="unbounded"/>
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute name="rule-number" type="xs:int" use="required"/>
+                              <xs:attribute name="point" type="xs:int" use="required"/>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="actions">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="transitions">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="transition" minOccurs="0" maxOccurs="unbounded">
+                                  <xs:complexType>
+                                    <xs:sequence/>
+                                    <xs:attribute name="type" type="transition-type" use="required"/>
+                                    <xs:attribute name="symbol" type="xs:string" use="required"/>
+                                    <xs:attribute name="state" type="xs:int" use="required"/>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="errors">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="error" minOccurs="0" maxOccurs="unbounded">
+                                  <xs:complexType>
+                                    <xs:simpleContent>
+                                      <xs:extension base="error-type">
+                                        <xs:attribute name="symbol" type="xs:string" use="required"/>
+                                      </xs:extension>
+                                    </xs:simpleContent>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="reductions">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="reduction" minOccurs="0" maxOccurs="unbounded">
+                                  <xs:complexType>
+                                    <xs:sequence/>
+                                    <xs:attribute name="symbol" type="xs:string" use="required"/>
+                                    <xs:attribute name="rule" type="reduction-rule" use="required"/>
+                                    <xs:attribute name="enabled" type="bool" use="required"/>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="solved-conflicts">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="resolution" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:simpleContent>
+                                <xs:extension base="xs:string">
+                                  <!--
+                                    The base string has one of the following forms:
+                                    * sym1 < sym2
+                                    * sym2 < sym1
+                                    * %left sym1
+                                    * %right sym1
+                                    * %nonassoc sym1
+                                  -->
+                                  <xs:attribute name="rule" type="xs:int" use="required"/>
+                                  <xs:attribute name="symbol" type="xs:string" use="required"/>
+                                  <xs:attribute name="type" type="resolution-type" use="required"/>
+                                </xs:extension>
+                              </xs:simpleContent>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="number" type="xs:int" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required"/>
+      <xs:attribute name="bug-report" type="xs:string" use="required"/>
+      <xs:attribute name="url" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

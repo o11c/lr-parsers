@@ -54,6 +54,15 @@ class SymbolData:
         x = 'terminal' if self._is_term else 'nonterminal'
         return '<SymbolData %s #%d %s>' % (x, self._id._number, self._name)
 
+    def _bison(self) -> str:
+        if all(c in string.ascii_letters for c in self._name):
+            return self._name
+        elif len(self._name) == 1 and self._name != "'":
+            return "'%s'" % self._name
+        else:
+            assert '"' not in self._name
+            return '"%s"' % self._name
+
 def _fix_sym(sym: str, is_term: bool) -> str:
     if is_term and len(sym) > 2:
         for q in ['\'', '"']:
@@ -152,6 +161,9 @@ class RuleData:
 
     def _grammar_repr(self) -> str:
         return '%s: %s' % (self._lhs._grammar_repr(), ' '.join(r._grammar_repr() for r in self._rhs))
+
+    def _bison(self) -> str:
+        return '%s: %s;' % (self._lhs._data()._bison(), ' '.join(r._data()._bison() for r in self._rhs))
 
 
 def _gen_rule_iter(rules: Iterable[Tuple[str, List[str]]], start: Optional[str]) -> Iterator[Tuple[str, List[str]]]:

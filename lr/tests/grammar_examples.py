@@ -95,6 +95,16 @@ class lr0:
             'term term term',
         ], ':')
 
+    ex_minimal3 = GrammarAndInputs('''
+            Root: '...';
+        ''', [
+            ('...', ".'...'"),
+        ], [
+            '',
+        ], [
+            '... ...',
+        ], ':')
+
     ex_kern = GrammarAndInputs('''
             S: a C a;
             S: b C b;
