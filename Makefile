@@ -19,3 +19,8 @@ all: coverage
 coverage: prep
 	${PYTHON} -m pytest -vv --cov lr/ --cov-report=html --cov-report=xml lr/
 	! xmllint coverage.xml --xpath '//*[@line-rate != "1"]/@filename'
+
+.PHONY: test
+# deliberately not in all:
+test: prep
+	${PYTHON} -m pytest lr/

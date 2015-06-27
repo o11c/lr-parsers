@@ -68,7 +68,7 @@ def test_slr_ambiguous(grammar_and_inputs: Grammar) -> None:
     with pytest.raises(LoweringError):
         automaton = compute_automaton(grammar)
 
-def test_repr_automaton() -> None:
+def test_slr_repr_automaton() -> None:
     ex = grammar_examples.lr0.ex_minimal1
     grammar = ex.grammar
 
@@ -101,7 +101,7 @@ def test_repr_automaton() -> None:
     assert repr(next(iter(automaton._data[1]._actions.values()))) == 'Reduce(<rule 1>)'
     assert repr(next(iter(automaton._data[0]._gotos.values()))) == 'Goto(<state 2>)'
 
-def test_repr_runtime() -> None:
+def test_slr_repr_runtime() -> None:
     ex = grammar_examples.lr0.ex_minimal1
     grammar = ex.grammar
     input, output = ex.good_inputs[0]

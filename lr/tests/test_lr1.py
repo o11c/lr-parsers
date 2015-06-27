@@ -5,7 +5,7 @@ import pytest
 from lr.error import InputError, LoweringError
 from lr.grammar import Grammar
 from lr.runtime import Runtime
-from lr.bison import compute_automaton
+from lr.lr1 import compute_automaton
 
 from ._mypy_bugs2 import parm_tests
 from . import grammar_examples
@@ -14,7 +14,7 @@ from .grammar_examples import GrammarAndInputs
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.lr0)
-def test_bison_lr0(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lr1_lr0(grammar_and_inputs: GrammarAndInputs) -> None:
     grammar = grammar_and_inputs.grammar
     automaton = compute_automaton(grammar)
 
@@ -31,7 +31,7 @@ def test_bison_lr0(grammar_and_inputs: GrammarAndInputs) -> None:
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.slr)
-def test_bison_slr(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lr1_slr(grammar_and_inputs: GrammarAndInputs) -> None:
     grammar = grammar_and_inputs.grammar
     automaton = compute_automaton(grammar)
 
@@ -48,7 +48,7 @@ def test_bison_slr(grammar_and_inputs: GrammarAndInputs) -> None:
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.lalr)
-def test_bison_lalr(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lr1_lalr(grammar_and_inputs: GrammarAndInputs) -> None:
     grammar = grammar_and_inputs.grammar
     automaton = compute_automaton(grammar)
 
@@ -65,27 +65,37 @@ def test_bison_lalr(grammar_and_inputs: GrammarAndInputs) -> None:
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.lr1)
-def test_bison_lr1(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lr1_lr1(grammar_and_inputs: GrammarAndInputs) -> None:
     grammar = grammar_and_inputs.grammar
-    with pytest.raises(LoweringError):
-        automaton = compute_automaton(grammar)
+    automaton = compute_automaton(grammar)
+
+    for input, output in grammar_and_inputs.good_inputs:
+        runtime = Runtime(automaton)
+        runtime.feed_all(input)
+        assert repr(runtime.get()) == output
+
+    for input in grammar_and_inputs.bad_inputs:
+        runtime = Runtime(automaton)
+        runtime.feed_all(input[:-1])
+        with pytest.raises(InputError):
+            runtime.feed(input[-1])
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.lr2)
-def test_bison_lr2(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lr1_lr2(grammar_and_inputs: GrammarAndInputs) -> None:
     grammar = grammar_and_inputs.grammar
     with pytest.raises(LoweringError):
         automaton = compute_automaton(grammar)
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.ambiguous)
-def test_bison_ambiguous(grammar_and_inputs: Grammar) -> None:
+def test_lr1_ambiguous(grammar_and_inputs: Grammar) -> None:
     grammar = grammar_and_inputs
     with pytest.raises(LoweringError):
         automaton = compute_automaton(grammar)
 
 @pytest.mark.xfail
-def test_bison_repr_automaton() -> None:
+def test_lr1_repr_automaton() -> None:
     ex = grammar_examples.lr0.ex_minimal1
     grammar = ex.grammar
 
@@ -119,7 +129,7 @@ def test_bison_repr_automaton() -> None:
     assert repr(next(iter(automaton._data[0]._gotos.values()))) == 'Goto(<state 2>)'
 
 @pytest.mark.xfail
-def test_bison_repr_runtime() -> None:
+def test_lr1_repr_runtime() -> None:
     ex = grammar_examples.lr0.ex_minimal1
     grammar = ex.grammar
     input, output = ex.good_inputs[0]
