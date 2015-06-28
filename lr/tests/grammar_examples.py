@@ -220,16 +220,20 @@ class slr:
 @module
 class lalr:
     ex1 = GrammarAndInputs('''
-            S: A a;
-            S: b A c;
+            S: D A;
+            S: b D c;
             S: d c;
-            S: b d a;
-            A: d;
+            S: b d A;
+            A: a;
+            A: e;
+            D: d;
         ''', [
-            ('d a', ""),
-            ('b d c', ""),
-            ('d c', ""),
-            ('b d a', ""),
+            ('d a', "S0(.'d', .'a')"),
+            ('d e', "S0(.'d', .'e')"),
+            ('b d c', "S1('b', .'d', 'c')"),
+            ('d c', "S2('d', 'c')"),
+            ('b d a', "S3('b', 'd', .'a')"),
+            ('b d e', "S3('b', 'd', .'e')"),
         ], [
             '',
         ], [
@@ -242,8 +246,17 @@ class lalr:
             L: id;
             R: L;
         ''', [
+            ('* id = id', "E0(L0('*', ..'id'), '=', ..'id')"),
+            ('id = * id', "E0(.'id', '=', .L0('*', ..'id'))"),
+            ('* * id', "..L0('*', .L0('*', ..'id'))"),
+            ('id', "...'id'"),
         ], [
+            '',
+            '*',
+            'id = *',
+            '* id =',
         ], [
+            '=',
         ], None)
 
 @module

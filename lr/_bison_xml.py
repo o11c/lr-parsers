@@ -8,14 +8,14 @@ from typing import (
         TypeVar,
 )
 
-from . import _mypy_bugs
+from ._mypy_bugs import identity, AutoRepr
 
 import lxml.etree as etree
 
 
 T = TypeVar('T')
 
-xml_identity = typing.cast(Callable[[etree._Element], etree._Element], _mypy_bugs.identity)
+xml_identity = typing.cast(Callable[[etree._Element], etree._Element], identity)
 
 
 # TODO Use `enum` for assoc and usefulness.
@@ -63,7 +63,7 @@ def root(xml: etree._ElementTree, cls: Callable[[etree._Element], T]) -> T:
 def String(xml: etree._Element) -> str:
     return xml.text
 
-class BisonXmlReport:
+class BisonXmlReport(AutoRepr):
     __slots__ = ('version', 'bug_report', 'url', 'filename', 'grammar', 'automaton')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -74,7 +74,7 @@ class BisonXmlReport:
         self.grammar = child(xml, 'grammar', Grammar)
         self.automaton = inner_children(xml, 'automaton', 'state', State)
 
-class Grammar:
+class Grammar(AutoRepr):
     __slots__ = ('rules', 'terminals', 'nonterminals')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -82,7 +82,7 @@ class Grammar:
         self.terminals = inner_children(xml, 'terminals', 'terminal', Terminal)
         self.nonterminals = inner_children(xml, 'nonterminals', 'nonterminal', Nonterminal)
 
-class Rule:
+class Rule(AutoRepr):
     __slots__ = ('number', 'usefulness', 'lhs', 'rhs')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -91,7 +91,7 @@ class Rule:
         self.lhs = child(xml, 'lhs', String)
         self.rhs = inner_children(xml, 'rhs', 'symbol', String)
 
-class Terminal:
+class Terminal(AutoRepr):
     __slots__ = ('symbol_number', 'token_number', 'name', 'usefulness', 'prec', 'assoc')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -102,7 +102,7 @@ class Terminal:
         self.prec = opt_attr(xml, 'prec', int)
         self.assoc = opt_attr(xml, 'assoc', str)
 
-class Nonterminal:
+class Nonterminal(AutoRepr):
     __slots__ = ('symbol_number', 'name', 'usefulness')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -110,7 +110,7 @@ class Nonterminal:
         self.name = attr(xml, 'name', str)
         self.usefulness = attr(xml, 'usefulness', str)
 
-class State:
+class State(AutoRepr):
     __slots__ = ('number', 'itemset', 'actions', 'solved_conflicts')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -119,7 +119,7 @@ class State:
         self.actions = child(xml, 'actions', Actions)
         self.solved_conflicts = inner_children(xml, 'solved-conflicts', 'resolution', GetResolution)
 
-class Item:
+class Item(AutoRepr):
     __slots__ = ('rule', 'point', 'lookaheads')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -127,7 +127,7 @@ class Item:
         self.point = attr(xml, 'point', int)
         self.lookaheads = opt_inner_children(xml, 'lookaheads', 'symbol', String)
 
-class Actions:
+class Actions(AutoRepr):
     __slots__ = ('transitions', 'errors', 'reductions')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -135,8 +135,11 @@ class Actions:
         self.errors = inner_children(xml, 'errors', 'error', Error)
         self.reductions = inner_children(xml, 'reductions', 'reduction', Reduction)
 
-class TransitionBase:
+class TransitionBase(AutoRepr):
     __slots__ = ('symbol', 'state')
+
+    if False:
+        type = None # type: str
 
     def __init__(self, xml: etree._Element) -> None:
         self.symbol = attr(xml, 'symbol', str)
@@ -158,14 +161,14 @@ def GetTransition(xml: etree._Element) -> TransitionBase:
     type = attr(xml, 'type', str)
     return _transition_types[type](xml)
 
-class Error:
+class Error(AutoRepr):
     __slots__ = ('symbol', 'content')
 
     def __init__(self, xml: etree._Element) -> None:
         self.symbol = attr(xml, 'symbol', str) # pragma: no cover
         self.content = String(xml)             # pragma: no cover
 
-class Reduction:
+class Reduction(AutoRepr):
     __slots__ = ('symbol', 'rule', 'enabled')
 
     def __init__(self, xml: etree._Element) -> None:
@@ -181,8 +184,11 @@ def IntOrAccept(text: str) -> int:
 def Bool(text: str) -> int:
     return {'true': True, 'false': False}[text]
 
-class ResolutionBase:
+class ResolutionBase(AutoRepr):
     __slots__ = ('rule', 'symbol', 'content')
+
+    if False:
+        type = None # type: str
 
     def __init__(self, xml: etree._Element) -> None:
         self.rule = attr(xml, 'rule', int)     # pragma: no cover

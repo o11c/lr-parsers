@@ -8,6 +8,11 @@ from typing import (
         Iterator,
 )
 
+
+class XMLSyntaxError(Exception):
+    pass
+
+
 class _Element:
     attrib = None # type: Dict[str, str]
     text = None # type: str
@@ -26,6 +31,7 @@ class XMLSchema:
 class XMLParser:
     def __init__(self, schema: XMLSchema) -> None:
         pass
+
 
 def parse(input: typing.BinaryIO, parser: XMLParser) -> _ElementTree:
     pass

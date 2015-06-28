@@ -64,6 +64,8 @@ class SymbolData:
             return '"%s"' % self._name
 
 def _fix_sym(sym: str, is_term: bool) -> str:
+    if sym == 'error':
+        raise SymbolError('other: %r' % sym) # pragma: no cover
     if is_term and len(sym) > 2:
         for q in ['\'', '"']:
             if sym[0] == q and sym[-1] == q:

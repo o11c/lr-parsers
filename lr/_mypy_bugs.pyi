@@ -8,6 +8,9 @@ from typing import (
 T = TypeVar('T')
 
 
+class AutoRepr:
+    __slots__ = ()
+
 def as_tuple(x: Iterable[T]) -> Sequence[T]:
     pass
 

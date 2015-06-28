@@ -66,7 +66,7 @@ class ItemSet(AbstractItemSet):
     def __repr__(self) -> str:
         origin = self._origin_str()
         bits = '\n  '.join(self._bits())
-        return '<slr.ItemSet #%s, kernel %d/%d, %s\n  %s\n>' % (self._state._id._number, self._kernel_size, len(self._items), origin, bits)
+        return '<slr.ItemSet #%d, kernel %d/%d, %s\n  %s\n>' % (self._state._id._number, self._kernel_size, len(self._items), origin, bits)
 
     def _origin_str(self) -> str:
         prev_states = sorted(self._prev_states, key=lambda x: x._number)
