@@ -5,7 +5,7 @@ import pytest
 from lr.error import InputError, LoweringError
 from lr.grammar import Grammar
 from lr.runtime import Runtime
-from lr.slr import compute_automaton
+from lr.slr import compute_automaton, _mdot
 
 from ._mypy_bugs2 import parm_tests
 from . import grammar_examples
@@ -77,26 +77,26 @@ def test_slr_repr_automaton() -> None:
     assert repr(automaton._data) == '''
 [<StateData #0 with 1 actions, 1 gotos
   <slr.ItemSet #0, kernel 1/2, ← ()
-  * < $accept → \x1b[35m•\x1b[39m Root $eof >
-  + < Root → \x1b[35m•\x1b[39m term >
+  * < $accept → • Root $eof >
+  + < Root → • term >
 >>, <StateData #1 with 1 actions, 0 gotos
   <slr.ItemSet #1, kernel 1/1, ← (0)
-  * < Root → term \x1b[35m•\x1b[39m >
+  * < Root → term • >
 >>, <StateData #2 with 1 actions, 0 gotos
   <slr.ItemSet #2, kernel 1/1, ← (0)
-  * < $accept → Root \x1b[35m•\x1b[39m $eof >
+  * < $accept → Root • $eof >
 >>, <StateData #3 with 0 actions, 0 gotos
   <slr.ItemSet #3, kernel 1/1, ← (2)
-  * < $accept → Root $eof \x1b[35m•\x1b[39m >
+  * < $accept → Root $eof • >
 >>]
-    '''.strip()
+    '''.strip().replace('•', _mdot)
     assert repr(automaton._data[0]._id) == '''
 <StateId for <StateData #0 with 1 actions, 1 gotos
   <slr.ItemSet #0, kernel 1/2, ← ()
-  * < $accept → \x1b[35m•\x1b[39m Root $eof >
-  + < Root → \x1b[35m•\x1b[39m term >
+  * < $accept → • Root $eof >
+  + < Root → • term >
 >>>
-'''.strip()
+'''.strip().replace('•', _mdot)
     assert repr(next(iter(automaton._data[0]._actions.values()))) == 'Shift(<state 1>)'
     assert repr(next(iter(automaton._data[1]._actions.values()))) == 'Reduce(<rule 1>)'
     assert repr(next(iter(automaton._data[0]._gotos.values()))) == 'Goto(<state 2>)'

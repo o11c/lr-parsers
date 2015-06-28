@@ -261,6 +261,7 @@ class lalr:
 
 @module
 class lr1:
+    # TODO find an example that produces different tables in IELR and CLR.
     ex1 = GrammarAndInputs('''
             S: a E c;
             S: a F d;
@@ -269,10 +270,10 @@ class lr1:
             E: e;
             F: e;
         ''', [
-            ('a e c', ""),
-            ('a e d', ""),
-            ('b e c', ""),
-            ('b e d', ""),
+            ('a e c', "S0('a', .'e', 'c')"),
+            ('a e d', "S1('a', .'e', 'd')"),
+            ('b e c', "S2('b', .'e', 'c')"),
+            ('b e d', "S3('b', .'e', 'd')"),
         ], [
             '',
         ], [
@@ -286,10 +287,10 @@ class lr2:
             A: a;
             A: a a;
         ''', [
-            ('a a a', "'a' .'a' 'a'"),
-            ('a a a a', "'a' A1('a' 'a') 'a'"),
-            ('b a b', "'b' .'a' 'b'"),
-            ('b a a b', "'b' A1('a' 'a') 'b'"),
+            ('a a a', "S0('a', .'a', 'a')"),
+            ('a a a a', "S0('a', A1('a', 'a'), 'a')"),
+            ('b a b', "S1('b', .'a', 'b')"),
+            ('b a a b', "S1('b', A1('a', 'a'), 'b')"),
         ], [
         ], [
         ], None)

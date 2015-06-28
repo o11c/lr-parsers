@@ -88,7 +88,7 @@ class ItemSet(AbstractItemSet):
         return True
 
 
-def run_bison(grammar: Grammar, lr_type: str = 'lalr') -> etree._ElementTree:
+def run_bison(grammar: Grammar, lr_type: str) -> etree._ElementTree:
     args = [BISON, '/dev/stdin', '-o', '/dev/null', '--xml=/dev/stdout']
     if has_bison_caret:
         # Without this, bison will attempt to read the input file twice
@@ -107,6 +107,7 @@ def run_bison(grammar: Grammar, lr_type: str = 'lalr') -> etree._ElementTree:
         p('%token ', sym_bison)
     p('%start ', grammar._data[0]._rhs[0]._data()._bison())
     p('%define lr.type ', lr_type)
+    p('%define lr.default-reductions accepting')
     p('%%')
     for rule in grammar._data[1:]:
         p(rule._bison())
@@ -145,8 +146,8 @@ def make_symbol_map(grammar: Grammar, bison_xml_report: _bison_xml.BisonXmlRepor
             assert g_r is symbol_map[b_r]
     return symbol_map
 
-def compute_automaton(grammar: Grammar) -> Automaton:
-    xml = run_bison(grammar)
+def compute_automaton(grammar: Grammar, lr_type: str) -> Automaton:
+    xml = run_bison(grammar, lr_type)
     bison_xml_report = parse_bison(xml)
     symbol_map = make_symbol_map(grammar, bison_xml_report)
     automaton = Automaton()
@@ -186,3 +187,12 @@ def compute_automaton(grammar: Grammar) -> Automaton:
             actions[key] = Reduce(rule_id)
 
     return automaton
+
+def compute_automaton_lalr(grammar: Grammar) -> Automaton:
+    return compute_automaton(grammar, 'lalr')
+
+def compute_automaton_ielr1(grammar: Grammar) -> Automaton:
+    return compute_automaton(grammar, 'ielr')
+
+def compute_automaton_clr1(grammar: Grammar) -> Automaton:
+    return compute_automaton(grammar, 'canonical-lr')
