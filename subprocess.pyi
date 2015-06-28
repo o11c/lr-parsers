@@ -18,3 +18,6 @@ class Popen:
 
     def wait(self) -> int:
         pass
+
+def call(args: List[str]) -> int:
+    pass
