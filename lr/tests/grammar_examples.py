@@ -259,6 +259,20 @@ class lalr:
             '=',
         ], None)
 
+    example10 = GrammarAndInputs('''
+        E: a X d;
+        E: b X c;
+        E: b Y d;
+        X: e X;
+        X: e;
+        Y: e Y;
+        Y: e;
+    ''', [
+    ], [
+    ], [
+    ], None)
+
+
 @module
 class lr1:
     # TODO find an example that produces different tables in IELR and CLR.
@@ -279,8 +293,22 @@ class lr1:
         ], [
         ], None)
 
+    example8 = GrammarAndInputs('''
+        S: a A a;
+        S: b A b;
+        S: a B b;
+        S: b B a;
+        A: c c;
+        B: c c;
+    ''', [
+    ], [
+    ], [
+    ], None)
+
 @module
 class lr2:
+    # Not having an LR(2) parser, I'm not sure if these really are.
+    # What is certain is that they are not LR(1).
     ex1 = GrammarAndInputs('''
             S: a A a;
             S: b A b;
@@ -294,6 +322,39 @@ class lr2:
         ], [
         ], [
         ], None)
+
+    example3 = GrammarAndInputs('''
+        S: a A a;
+        S: b A b;
+        S: c C;
+        A: a a;
+        A: a;
+        C: a b;
+        C: A;
+    ''', [
+    ], [
+    ], [
+    ], None)
+
+    example4 = GrammarAndInputs('''
+        S: A '+' A;
+        A: T '+' T;
+        A: T;
+        T: r;
+    ''', [
+    ], [
+    ], [
+    ], None)
+
+    example5 = GrammarAndInputs('''
+        S: a A a;
+        S: b A b;
+        A: a a a;
+        A: a a;
+    ''', [
+    ], [
+    ], [
+    ], None)
 
 @module
 class ambiguous:

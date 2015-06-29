@@ -95,7 +95,7 @@ def run_bison(grammar: Grammar, lr_type: str) -> etree._ElementTree:
         # if there is any warning/error, which obviously fails with a pipe.
         # Bug report here: https://lists.gnu.org/archive/html/bug-bison/2015-06/msg00001.html
         args.append('--feature=none')
-    args.extend(['-Wall', '-Werror'])
+    args.extend(['-Wall', '-Werror', '-Wno-deprecated'])
     proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     def p(*s: str) -> None:
         proc.stdin.writelines([x.encode('utf-8') for x in s] + [b'\n'])
