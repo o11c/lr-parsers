@@ -5,11 +5,13 @@ from typing import (
         Iterable,
         List,
         Tuple,
+        TypeVar,
 )
 
 from abc import ABCMeta, abstractmethod
 import weakref
 
+from .error import LoweringError
 from .grammar import RuleId, SymbolId
 
 
@@ -109,3 +111,17 @@ class AbstractItemSet(metaclass=ABCMeta):
     @abstractmethod
     def is_final_state(self) -> bool:
         pass # pragma: no cover
+
+# TODO clean callers after https://github.com/JukkaL/mypy/issues/689
+def raise_conflicts(conflicts: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]) -> None:
+    if not conflicts:
+        return
+    conflict_lines = ['conflicts in %d states:' % len(conflicts)]
+    for its, symco in sorted(conflicts.items(), key=lambda pair: pair[0]._state._id._number):
+        conflict_lines.append('%d conflicts in %s' % (len(symco), its))
+        for sym, acts in sorted(symco.items(), key=lambda pair: pair[0]._number):
+            sym_name = sym._data()._name
+            sym_acts = ', '.join(str(a) for a in acts)
+            conflict_lines.append('  %s: {%s}' % (sym_name, sym_acts))
+    conflict_lines.append('\n')
+    raise LoweringError('\n'.join(conflict_lines))

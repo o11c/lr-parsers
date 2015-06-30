@@ -179,7 +179,7 @@ def compute_automaton(grammar: Grammar, lr_type: str) -> Automaton:
                 continue # pragma: no cover
             rule_id = grammar._data[reduction.rule]._id
             if reduction.symbol == '$default':
-                for key in grammar._symbols.all_terminals():
+                for key in grammar.all_terminals():
                     if key not in actions:
                         actions[key] = Reduce(rule_id)
                 continue

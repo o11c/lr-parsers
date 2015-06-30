@@ -21,6 +21,9 @@ _arrow = '→'
 _mdot = '\x1b[35m•\x1b[39m'
 
 
+# This file really ought to be rewritten with lessons learned in `slr.py`.
+
+
 class ClosureTuple:
     __slots__ = ('nonterminal_list', 'terminal_list', 'all_set')
 

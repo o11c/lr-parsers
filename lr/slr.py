@@ -12,9 +12,9 @@ from typing import (
 )
 
 from ._mypy_bugs import as_tuple
-from .error import LoweringError
 from .grammar import Grammar, RuleId, SymbolId
-from .automaton import Automaton, Shift, Reduce, Goto, AbstractItemSet, StateId
+from .automaton import Automaton, Action, Shift, Reduce, Goto, AbstractItemSet, StateId, raise_conflicts
+from .conflict import ConflictMap
 
 
 _arrow = '→'
@@ -166,7 +166,7 @@ def _calc_follow(grammar: Grammar, sym: SymbolId, first: Dict[SymbolId, List[Sym
                         follow_terminals.append(sym3)
     return follow_terminals
 
-def _get_successor_state(istate: ItemSet, sym: SymbolId, grammar: Grammar, automaton: Automaton, kernels: Dict[Sequence[Tuple[RuleId, int]], ItemSet], follow: Dict[SymbolId, List[SymbolId]]) -> ItemSet:
+def _get_successor_state(istate: ItemSet, sym: SymbolId, grammar: Grammar, automaton: Automaton, kernels: Dict[Sequence[Tuple[RuleId, int]], ItemSet], follow: Dict[SymbolId, List[SymbolId]], conflicts: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]) -> ItemSet:
     seeds = [
             Item(it._rule, it._index + 1)
             for it in istate._items
@@ -179,22 +179,21 @@ def _get_successor_state(istate: ItemSet, sym: SymbolId, grammar: Grammar, autom
         return item_set
     kernels[kernel] = item_set = ItemSet(seeds, grammar, automaton)
     item_set._prev_states.append(istate._state._id)
-    _do_state(item_set, grammar, automaton, kernels, follow)
+    _do_state(item_set, grammar, automaton, kernels, follow, conflicts)
     return item_set
 
-def _do_state(istate: ItemSet, grammar: Grammar, automaton: Automaton, kernels: Dict[Sequence[Tuple[RuleId, int]], ItemSet], follow: Dict[SymbolId, List[SymbolId]]) -> None:
+def _do_state(istate: ItemSet, grammar: Grammar, automaton: Automaton, kernels: Dict[Sequence[Tuple[RuleId, int]], ItemSet], follow: Dict[SymbolId, List[SymbolId]], conflicts: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]) -> None:
     shift_syms = [] # type: List[SymbolId]
     goto_syms = [] # type: List[SymbolId]
     shift_items = {} # type: Dict[SymbolId, List[Item]]
     goto_items = {} # type: Dict[SymbolId, List[Item]]
+    actions = ConflictMap(grammar.all_terminals()) # type: ConflictMap[SymbolId, Action]
+
     for item in istate._items:
         sym = item._next_sym()
         if sym is None:
             for sym in follow[item._rule._data()._lhs]:
-                if sym in istate._state._actions:
-                    raise LoweringError('reduce/reduce conflict')
-                else:
-                    istate._state._actions[sym] = Reduce(item._rule)
+                actions.add(sym, Reduce(item._rule))
         else:
             if sym._data()._is_term:
                 tmp_items = shift_items.setdefault(sym, [])
@@ -205,14 +204,16 @@ def _do_state(istate: ItemSet, grammar: Grammar, automaton: Automaton, kernels: 
                 if not tmp_items:
                     goto_syms.append(sym)
             tmp_items.append(item)
+    # The above loop guarantees that these lists have unique elements.
     for sym in shift_syms:
-        if sym in istate._state._actions:
-            raise LoweringError('shift/reduce conflict')
-        succ_state = _get_successor_state(istate, sym, grammar, automaton, kernels, follow)
-        istate._state._actions[sym] = Shift(succ_state._state._id)
+        succ_state = _get_successor_state(istate, sym, grammar, automaton, kernels, follow, conflicts)
+        actions.add(sym, Shift(succ_state._state._id))
     for sym in goto_syms:
-        succ_state = _get_successor_state(istate, sym, grammar, automaton, kernels, follow)
+        succ_state = _get_successor_state(istate, sym, grammar, automaton, kernels, follow, conflicts)
         istate._state._gotos[sym] = Goto(succ_state._state._id)
+    istate._state._actions, rv = actions.finish()
+    if rv:
+        conflicts[istate] = rv
 
 def compute_automaton(grammar: Grammar) -> Automaton:
     # key: nonterminal, value: terminal
@@ -220,7 +221,7 @@ def compute_automaton(grammar: Grammar) -> Automaton:
     # key: nonterminal, value: terminal
     follow = {} # type: Dict[SymbolId, List[SymbolId]]
 
-    all_nonterminals = grammar._symbols.all_nonterminals()
+    all_nonterminals = grammar.all_nonterminals()
 
     for sym in all_nonterminals:
         first[sym] = _calc_first(grammar, sym)
@@ -236,6 +237,7 @@ def compute_automaton(grammar: Grammar) -> Automaton:
     # initial state doesn't need to be cached since it can't be a successor
     kernels = {} # type: Dict[Sequence[Tuple[RuleId, int]], ItemSet]
 
-    _do_state(istate0, grammar, automaton, kernels, follow)
-
+    conflicts = {} # type: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]
+    _do_state(istate0, grammar, automaton, kernels, follow, conflicts)
+    raise_conflicts(conflicts)
     return automaton

@@ -247,3 +247,6 @@ class Grammar:
 
     def all_terminals(self) -> List[SymbolId]:
         return self._symbols.all_terminals()
+
+    def all_nonterminals(self) -> List[SymbolId]:
+        return self._symbols.all_nonterminals()
