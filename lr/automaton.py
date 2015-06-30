@@ -12,7 +12,7 @@ from abc import ABCMeta, abstractmethod
 import weakref
 
 from .error import LoweringError
-from .grammar import RuleId, SymbolId
+from .grammar import Grammar, RuleId, SymbolId
 
 
 class BaseAction:
@@ -79,10 +79,11 @@ class StateData:
         return '<StateData #%d with %d actions, %d gotos\n  %r>' % (self._id._number, len(self._actions), len(self._gotos), self._creator)
 
 class Automaton:
-    __slots__ = ('_data', '__weakref__')
+    __slots__ = ('_data', '_grammar', '__weakref__')
 
-    def __init__(self) -> None:
+    def __init__(self, grammar: Grammar) -> None:
         self._data = [] # type: List[StateData]
+        self._grammar = grammar
 
     def __repr__(self) -> str:
         return '<Automaton with %d states>' % (len(self._data))

@@ -150,7 +150,7 @@ def compute_automaton(grammar: Grammar, lr_type: str) -> Automaton:
     xml = run_bison(grammar, lr_type)
     bison_xml_report = parse_bison(xml)
     symbol_map = make_symbol_map(grammar, bison_xml_report)
-    automaton = Automaton()
+    automaton = Automaton(grammar)
     state_map = [] # type: List[ItemSet]
     for state in bison_xml_report.automaton:
         items = [] # type: List[Item]

@@ -131,7 +131,8 @@ class ItemSet(AbstractItemSet):
             return False # pragma: no cover
         return True
 
-def _add_item_set(automaton: Automaton, prev: Optional[ItemSet], sym: Optional[SymbolId], lst: List[ItemSet], grammar: Grammar, kernels: Dict[Sequence[Tuple[RuleId, int]], ItemSet]) -> ItemSet:
+def _add_item_set(automaton: Automaton, prev: Optional[ItemSet], sym: Optional[SymbolId], lst: List[ItemSet], kernels: Dict[Sequence[Tuple[RuleId, int]], ItemSet]) -> ItemSet:
+    grammar = automaton._grammar
     if prev is None:
         seeds = [Item(grammar._data[0]._id, 0)]
     else:
@@ -178,25 +179,25 @@ def _add_item_set(automaton: Automaton, prev: Optional[ItemSet], sym: Optional[S
     lst.append(item_set)
 
     for sym2 in clt.nonterminal_list:
-        is2 = _add_item_set(automaton, item_set, sym2, lst, grammar, kernels) # type: ItemSet
+        is2 = _add_item_set(automaton, item_set, sym2, lst, kernels) # type: ItemSet
         assert sym2 not in item_set._state._gotos
         item_set._state._gotos[sym2] = Goto(is2._state._id)
     for sym2 in clt.terminal_list:
-        is2 = _add_item_set(automaton, item_set, sym2, lst, grammar, kernels)
+        is2 = _add_item_set(automaton, item_set, sym2, lst, kernels)
         # This replaces the reduce if present, but from the recursively
         # called function on the line before.
         item_set._state._actions[sym2] = Shift(is2._state._id)
     return item_set
 
-def _init_item_set(grammar: Grammar, automaton: Automaton) -> List[ItemSet]:
+def _init_item_set(automaton: Automaton) -> List[ItemSet]:
     prev = None # type: ItemSet
     sym = None # type: SymbolId
     lst = [] # type: List[ItemSet]
-    first = _add_item_set(automaton, prev, sym, lst, grammar, {})
+    first = _add_item_set(automaton, prev, sym, lst, {})
     assert first is lst[0]
     return lst
 
 def compute_automaton(grammar: Grammar) -> Automaton:
-    automaton = Automaton()
-    item_sets = _init_item_set(grammar, automaton)
+    automaton = Automaton(grammar)
+    item_sets = _init_item_set(automaton)
     return automaton
