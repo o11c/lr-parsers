@@ -1,10 +1,27 @@
 language: python
+
 python:
-# Pypy only implements Python 3.2, which does not have `yield from` syntax.
+  # Pypy3 (as of 2.4.0; the 2.6 release is only of Pypy2):
+  # - only implements Python 3.2:
+  #   - which does not have `yield from` syntax.
+  # - Pypy requires a fork of lxml, and it seems to fail with Pypy3.
+  #   - Possibly careful setup and/or simple patching could make it work.
 #  - "pypy3"
   - "3.3"
   - "3.4"
 #  - "3.5"
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
+  irc:
+    channels:
+      - "chat.freenode.net#o11c"
+    on_success: always
+    on_failure: always
+    use_notice: true
+
 install:
   - sudo apt-get install bison libxml2-dev libxslt1-dev
   - pip install -r requirements.txt
