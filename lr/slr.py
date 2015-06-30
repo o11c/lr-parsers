@@ -112,6 +112,31 @@ class ItemSet(AbstractItemSet):
             return False # pragma: no cover
         return True
 
+class SlrJunk:
+    __slots__ = ('follow', 'automaton', 'kernels', 'conflicts')
+
+    def __init__(self, grammar: Grammar) -> None:
+        # key: nonterminal, value: terminal
+        first = {} # type: Dict[SymbolId, List[SymbolId]]
+        # key: nonterminal, value: terminal
+        self.follow = {} # type: Dict[SymbolId, List[SymbolId]]
+
+        all_nonterminals = grammar.all_nonterminals()
+
+        for sym in all_nonterminals:
+            first[sym] = _calc_first(grammar, sym)
+
+        for sym in all_nonterminals:
+            self.follow[sym] = _calc_follow(grammar, sym, first)
+
+        self.automaton = Automaton(grammar)
+
+        # initial state doesn't need to be cached since it can't be a successor
+        self.kernels = {} # type: Dict[Sequence[Tuple[RuleId, int]], ItemSet]
+
+        self.conflicts = {} # type: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]
+
+
 def _calc_first(grammar: Grammar, sym: SymbolId) -> List[SymbolId]:
     assert not sym._data()._is_term
     sym_set = {sym}
@@ -166,8 +191,13 @@ def _calc_follow(grammar: Grammar, sym: SymbolId, first: Dict[SymbolId, List[Sym
                         follow_terminals.append(sym3)
     return follow_terminals
 
-def _get_successor_state(istate: ItemSet, sym: SymbolId, automaton: Automaton, kernels: Dict[Sequence[Tuple[RuleId, int]], ItemSet], follow: Dict[SymbolId, List[SymbolId]], conflicts: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]) -> ItemSet:
+def _get_successor_state(istate: ItemSet, sym: SymbolId, junk: SlrJunk) -> ItemSet:
+    follow = junk.follow
+    automaton = junk.automaton
+    kernels = junk.kernels
+    conflicts = junk.conflicts
     grammar = automaton._grammar
+
     seeds = [
             Item(it._rule, it._index + 1)
             for it in istate._items
@@ -180,11 +210,16 @@ def _get_successor_state(istate: ItemSet, sym: SymbolId, automaton: Automaton, k
         return item_set
     kernels[kernel] = item_set = ItemSet(seeds, automaton)
     item_set._prev_states.append(istate._state._id)
-    _do_state(item_set, automaton, kernels, follow, conflicts)
+    _do_state(item_set, junk)
     return item_set
 
-def _do_state(istate: ItemSet, automaton: Automaton, kernels: Dict[Sequence[Tuple[RuleId, int]], ItemSet], follow: Dict[SymbolId, List[SymbolId]], conflicts: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]) -> None:
+def _do_state(istate: ItemSet, junk: SlrJunk) -> None:
+    follow = junk.follow
+    automaton = junk.automaton
+    kernels = junk.kernels
+    conflicts = junk.conflicts
     grammar = automaton._grammar
+
     shift_syms = [] # type: List[SymbolId]
     goto_syms = [] # type: List[SymbolId]
     shift_items = {} # type: Dict[SymbolId, List[Item]]
@@ -208,38 +243,21 @@ def _do_state(istate: ItemSet, automaton: Automaton, kernels: Dict[Sequence[Tupl
             tmp_items.append(item)
     # The above loop guarantees that these lists have unique elements.
     for sym in shift_syms:
-        succ_state = _get_successor_state(istate, sym, automaton, kernels, follow, conflicts)
+        succ_state = _get_successor_state(istate, sym, junk)
         actions.add(sym, Shift(succ_state._state._id))
     for sym in goto_syms:
-        succ_state = _get_successor_state(istate, sym, automaton, kernels, follow, conflicts)
+        succ_state = _get_successor_state(istate, sym, junk)
         istate._state._gotos[sym] = Goto(succ_state._state._id)
     istate._state._actions, rv = actions.finish()
     if rv:
         conflicts[istate] = rv
 
 def compute_automaton(grammar: Grammar) -> Automaton:
-    # key: nonterminal, value: terminal
-    first = {} # type: Dict[SymbolId, List[SymbolId]]
-    # key: nonterminal, value: terminal
-    follow = {} # type: Dict[SymbolId, List[SymbolId]]
-
-    all_nonterminals = grammar.all_nonterminals()
-
-    for sym in all_nonterminals:
-        first[sym] = _calc_first(grammar, sym)
-
-    for sym in all_nonterminals:
-        follow[sym] = _calc_follow(grammar, sym, first)
-
-    automaton = Automaton(grammar)
+    junk = SlrJunk(grammar)
 
     root_item = Item(grammar._data[0]._id, 0)
-    istate0 = ItemSet([root_item], automaton)
+    istate0 = ItemSet([root_item], junk.automaton)
 
-    # initial state doesn't need to be cached since it can't be a successor
-    kernels = {} # type: Dict[Sequence[Tuple[RuleId, int]], ItemSet]
-
-    conflicts = {} # type: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]
-    _do_state(istate0, automaton, kernels, follow, conflicts)
-    raise_conflicts(conflicts)
-    return automaton
+    _do_state(istate0, junk)
+    raise_conflicts(junk.conflicts)
+    return junk.automaton
