@@ -22,7 +22,8 @@ _arrow = '→'
 _mdot = '\x1b[35m•\x1b[39m'
 _parallel = '\x1b[32m∥\x1b[39m'
 
-has_bison_caret = subprocess.call(['bison', '--feature=caret', '--version']) == 0
+has_bison_caret = subprocess.call([BISON, '--feature=caret', '--version']) == 0
+has_bison_deprecated = subprocess.call([BISON, '-Wdeprecated', '--version']) == 0
 
 
 class Item:
@@ -90,12 +91,16 @@ class ItemSet(AbstractItemSet):
 
 def run_bison(grammar: Grammar, lr_type: str) -> etree._ElementTree:
     args = [BISON, '/dev/stdin', '-o', '/dev/null', '--xml=/dev/stdout']
+    args.extend(['-Werror', '-Wall'])
+    if has_bison_deprecated:
+        # We output the oldest version of an option name for compatibility,
+        # even though it is deprecated in recent bison.
+        args.append('-Wno-deprecated')
     if has_bison_caret:
         # Without this, bison will attempt to read the input file twice
         # if there is any warning/error, which obviously fails with a pipe.
         # Bug report here: https://lists.gnu.org/archive/html/bug-bison/2015-06/msg00001.html
         args.append('--feature=none')
-    args.extend(['-Wall', '-Werror', '-Wno-deprecated'])
     proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     def p(*s: str) -> None:
         proc.stdin.writelines([x.encode('utf-8') for x in s] + [b'\n'])
