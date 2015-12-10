@@ -1,5 +1,3 @@
-import typing
-
 import pytest
 
 from lr.error import SymbolError, GrammarError
@@ -8,7 +6,7 @@ from lr.grammar import SymbolsInfo, Grammar
 from . import grammar_examples
 
 
-def test_symbol_contents() -> None:
+def test_symbol_contents():
     symbols = SymbolsInfo('''
         a
         b-c-d
@@ -92,7 +90,7 @@ def test_symbol_contents() -> None:
             a--b
         '''.split())
 
-def test_symbol_sets() -> None:
+def test_symbol_sets():
     with pytest.raises(SymbolError):
         symbols = SymbolsInfo('''
             a
@@ -106,7 +104,7 @@ def test_symbol_sets() -> None:
             a
         '''.split())
 
-def test_grammar() -> None:
+def test_grammar():
     symbols = SymbolsInfo('''
         a
         b
@@ -159,7 +157,7 @@ def test_grammar() -> None:
             A a;
         ''')
 
-def test_repr_grammar() -> None:
+def test_repr_grammar():
     ex = grammar_examples.lr0.ex_minimal1
     grammar = ex.grammar
     symbols = grammar._symbols

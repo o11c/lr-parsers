@@ -1,36 +1,21 @@
-import typing
-
-from typing import (
-        Dict,
-        Generic,
-        List,
-        Tuple,
-        TypeVar,
-)
-
-
-K = TypeVar('K')
-V = TypeVar('V')
-
-
-class ConflictMap(Generic[K, V]):
+class ConflictMap:
     __slots__ = ('_keys', '_data', '_default')
 
-    def __init__(self, keys: List[K]) -> None:
+    def __init__(self, keys):
         self._keys = keys
-        self._data = {}      # type: Dict[K, List[V]]
-        self._default = [] # type: List[V]
+        self._data = {}
+        self._default = []
 
-    def add(self, k: K, v: V) -> None:
+    def add(self, k, v):
         assert k in self._keys
         self._data.setdefault(k, []).append(v)
 
-    def add_default(self, v: V) -> None:
+    def add_default(self, v):
         self._default.append(v)
 
-    def finish(self) -> Tuple[Dict[K, V], Dict[K, List[V]]]:
-        rv_good = {} # type: Dict[K, V]
-        rv_bad = {} # type: Dict[K, List[V]]
+    def finish(self):
+        rv_good = {}
+        rv_bad = {}
 
         for k in self._keys:
             v = self._data.get(k) or self._default

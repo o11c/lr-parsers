@@ -1,10 +1,3 @@
-import typing
-
-from typing import (
-        Iterable,
-        List,
-)
-
 from .automaton import Automaton, Shift, Reduce
 from .value import Value, Terminal, Nonterminal
 from .error import InputError
@@ -13,19 +6,19 @@ from .error import InputError
 class Runtime:
     __slots__ = ('_automaton', '_state_stack', '_value_stack')
 
-    def __init__(self, automaton: Automaton) -> None:
+    def __init__(self, automaton):
         self._automaton = automaton
         self._state_stack = [automaton.get_state0()]
-        self._value_stack = [] # type: List[Value]
+        self._value_stack = []
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return '<Runtime in state #%d/%d with %d values>' % (self._state_stack[-1]._number, len(self._automaton._data), len(self._value_stack))
 
-    def feed_all(self, toks: Iterable[Terminal]) -> None:
+    def feed_all(self, toks):
         for tok in toks:
             self.feed(tok)
 
-    def feed(self, tok: Terminal) -> None:
+    def feed(self, tok):
         while True:
             assert len(self._state_stack) == 1 + len(self._value_stack)
             current_state = self._state_stack[-1]._data()
@@ -54,7 +47,7 @@ class Runtime:
                 continue
             assert False, 'unknown subclass' # pragma: no cover
 
-    def get(self) -> Value:
+    def get(self):
         assert len(self._state_stack) == 3
         assert self._state_stack[-1]._data()._creator.is_final_state()
         assert len(self._value_stack) == 2

@@ -1,16 +1,3 @@
-import typing
-
-from typing import (
-        Dict,
-        Iterable,
-        Iterator,
-        List,
-        Optional,
-        Set,
-        Tuple,
-        Union,
-)
-
 import string
 import weakref
 
@@ -27,17 +14,17 @@ _special_accept = '$accept'
 class SymbolId:
     __slots__ = ('_number', '_info')
 
-    def __init__(self, number: int, info: 'SymbolsInfo') -> None:
+    def __init__(self, number, info):
         self._number = number
         self._info = weakref.ref(info)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return '<SymbolId for %r>' % (self._data(),)
 
-    def _data(self) -> 'SymbolData':
+    def _data(self):
         return self._info()._data[self._number]
 
-    def _grammar_repr(self) -> str:
+    def _grammar_repr(self):
         data = self._data()
         name = data._name
         return name
@@ -45,16 +32,16 @@ class SymbolId:
 class SymbolData:
     __slots__ = ('_id', '_name', '_is_term')
 
-    def __init__(self, id: SymbolId, name: str, is_term: bool) -> None:
+    def __init__(self, id, name, is_term):
         self._id = id
-        self._name = name # type: str
+        self._name = name
         self._is_term = is_term
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         x = 'terminal' if self._is_term else 'nonterminal'
         return '<SymbolData %s #%d %s>' % (x, self._id._number, self._name)
 
-    def _bison(self) -> str:
+    def _bison(self):
         if all(c in string.ascii_letters for c in self._name):
             return self._name
         elif len(self._name) == 1 and self._name != "'":
@@ -63,7 +50,7 @@ class SymbolData:
             assert '"' not in self._name
             return '"%s"' % self._name
 
-def _fix_sym(sym: str, is_term: bool) -> str:
+def _fix_sym(sym, is_term):
     if sym == 'error':
         raise SymbolError('other: %r' % sym) # pragma: no cover
     if is_term and len(sym) > 2:
@@ -80,7 +67,7 @@ def _fix_sym(sym: str, is_term: bool) -> str:
             raise SymbolError('alpha: %r' % sym)
     return sym
 
-def _gen_symbol_iter(terminals: Iterable[str], nonterminals: Iterable[str]) -> Iterator[Tuple[str, bool]]:
+def _gen_symbol_iter(terminals, nonterminals):
     yield _special_eof, True
     for sym in terminals:
         sym = _fix_sym(sym, True)
@@ -93,9 +80,9 @@ def _gen_symbol_iter(terminals: Iterable[str], nonterminals: Iterable[str]) -> I
 class SymbolsInfo:
     __slots__ = ('_numbers', '_data', '_num_terminals', '__weakref__')
 
-    def __init__(self, terminals: Iterable[str], nonterminals: Iterable[str]) -> None:
-        self._numbers = {} # type: Dict[str, int]
-        self._data = [] # type: List[SymbolData]
+    def __init__(self, terminals, nonterminals):
+        self._numbers = {}
+        self._data = []
         num_terminals = 0
 
         for name, is_term in _gen_symbol_iter(terminals, nonterminals):
@@ -108,19 +95,19 @@ class SymbolsInfo:
                 num_terminals += 1
         self._num_terminals = num_terminals
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         num_symbols = len(self._data)
         num_terminals = self._num_terminals
         num_nonterminals = num_symbols - num_terminals
         return '<SymbolsInfo for %d terminals and %d nonterminals>' % (num_terminals, num_nonterminals)
 
-    def _grammar_repr(self) -> str:
+    def _grammar_repr(self):
         num_symbols = len(self._data)
         num_terminals = self._num_terminals
         num_nonterminals = num_symbols - num_terminals
         return '%d nonterminals, %d terminals' % (num_nonterminals, num_terminals)
 
-    def get(self, sym: str, maybe_term: bool) -> SymbolId:
+    def get(self, sym, maybe_term):
         if not sym.startswith('$'):
             sym = _fix_sym(sym, maybe_term)
         try:
@@ -130,45 +117,45 @@ class SymbolsInfo:
         else:
             return self._data[num]._id
 
-    def all_terminals(self) -> List[SymbolId]:
+    def all_terminals(self):
         return [d._id for d in self._data[:self._num_terminals]]
 
-    def all_nonterminals(self) -> List[SymbolId]:
+    def all_nonterminals(self):
         return [d._id for d in self._data[self._num_terminals:]]
 
 class RuleId:
     __slots__ = ('_number', '_info')
 
-    def __init__(self, number: int, info: 'Grammar') -> None:
+    def __init__(self, number, info):
         self._number = number
         self._info = weakref.ref(info)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return '<RuleId for %r>' % (self._data(),)
 
-    def _data(self) -> 'RuleData':
+    def _data(self):
         return self._info()._data[self._number]
 
 class RuleData:
     __slots__ = ('_id', '_lhs', '_alt_number', '_rhs')
 
-    def __init__(self, id: RuleId, lhs: SymbolId, alt: int, rhs: List[SymbolId]) -> None:
+    def __init__(self, id, lhs, alt, rhs):
         self._id = id
         self._lhs = lhs
         self._alt_number = alt
         self._rhs = rhs
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return '<RuleData #%d %s.%d: %s>' % (self._id._number, self._lhs._grammar_repr(), self._alt_number, ' '.join(r._grammar_repr() for r in self._rhs))
 
-    def _grammar_repr(self) -> str:
+    def _grammar_repr(self):
         return '%s: %s' % (self._lhs._grammar_repr(), ' '.join(r._grammar_repr() for r in self._rhs))
 
-    def _bison(self) -> str:
+    def _bison(self):
         return '%s: %s;' % (self._lhs._data()._bison(), ' '.join(r._data()._bison() for r in self._rhs))
 
 
-def _gen_rule_iter(rules: Iterable[Tuple[str, List[str]]], start: Optional[str]) -> Iterator[Tuple[str, List[str]]]:
+def _gen_rule_iter(rules, start):
     rules = iter(rules)
     if start is None:
         first = next(rules)
@@ -181,20 +168,20 @@ def _gen_rule_iter(rules: Iterable[Tuple[str, List[str]]], start: Optional[str])
 class Grammar:
     __slots__ = ('_symbols', '_data', '_by_symbol_lhs', '_by_symbol_rhs', '__weakref__')
 
-    def __init__(self, symbols: SymbolsInfo, data: Iterable[Tuple[str, List[str]]], start: Optional[str] = None) -> None:
+    def __init__(self, symbols, data, start):
         self._symbols = symbols
-        self._data = [] # type: List[RuleData]
-        self._by_symbol_lhs = {} # type: Dict[SymbolId, List[RuleId]]
-        self._by_symbol_rhs = {} # type: Dict[SymbolId, List[Tuple[RuleId, int]]]
+        self._data = []
+        self._by_symbol_lhs = {}
+        self._by_symbol_rhs = {}
 
-        prev = None # type: SymbolId
+        prev = None
 
         for (lhs, rhs) in _gen_rule_iter(data, start):
             i = len(self._data)
             lhs_sym = symbols.get(lhs, False)
             rhs_syms = [symbols.get(r, True) for r in rhs]
             if lhs_sym != prev:
-                for_this_sym = [] # type: List[RuleId]
+                for_this_sym = []
                 if lhs_sym in self._by_symbol_lhs:
                     raise GrammarError('nonadjacent: %r' % lhs)
                 self._by_symbol_lhs[lhs_sym] = for_this_sym
@@ -206,12 +193,12 @@ class Grammar:
                 bsr = self._by_symbol_rhs.setdefault(rhs_sym, [])
                 bsr.append((datum._id, i))
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         rule_strs = [x._grammar_repr() for x in self._data]
         return '<Grammar with %d rules, %s\n  %s\n>' % (len(rule_strs), self._symbols._grammar_repr(), '\n  '.join(rule_strs))
 
     @staticmethod
-    def _do_parse(lines: Iterable[str]) -> Iterator[Tuple[str, List[str]]]:
+    def _do_parse(lines):
         for s in lines:
             s = s.strip()
             if not s:
@@ -227,12 +214,12 @@ class Grammar:
             yield lhs, rhs[:-1].split()
 
     @staticmethod
-    def parse(symbols: SymbolsInfo, lines: Union[str, Iterable[str]], start: Optional[str] = None) -> 'Grammar':
+    def parse(symbols, lines, start=None):
         if isinstance(lines, str):
             lines = lines.split('\n')
         return Grammar(symbols, Grammar._do_parse(lines), start)
 
-    def all(self, name: SymbolId) -> Optional[List[RuleId]]:
+    def all(self, name):
         try:
             rv = self._by_symbol_lhs[name]
         except KeyError:
@@ -242,11 +229,11 @@ class Grammar:
             assert not name._data()._is_term
             return rv
 
-    def uses(self, name: SymbolId) -> List[Tuple[RuleId, int]]:
+    def uses(self, name):
         return self._by_symbol_rhs.get(name, [])
 
-    def all_terminals(self) -> List[SymbolId]:
+    def all_terminals(self):
         return self._symbols.all_terminals()
 
-    def all_nonterminals(self) -> List[SymbolId]:
+    def all_nonterminals(self):
         return self._symbols.all_nonterminals()

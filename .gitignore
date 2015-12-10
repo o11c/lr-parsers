@@ -1,9 +1,8 @@
 *.pyc
-/mypy-report/
-/mypy-hack.py
 /.coverage
 /htmlcov/
 /coverage.xml
+/.cache/
 
 /.tox/
 /MANIFEST

@@ -1,13 +1,5 @@
-import typing
-
-from typing import (
-        List,
-        Optional,
-        Set,
-        Tuple,
-)
-
-from lr._mypy_bugs import module_decorator as module
+import sys
+from types import ModuleType
 
 from lr.grammar import (
         Grammar,
@@ -17,12 +9,25 @@ from lr.grammar import (
 from lr.value import Terminal
 
 
-def grammar_parse(source: str) -> Grammar:
-    nonterminal_list = [] # type: List[str]
-    nonterminal_set = set() # type: Set[str]
+def module(cls):
+    outer_mod = cls.__module__
+    name = '%s.%s' % (outer_mod, cls.__qualname__)
+    assert name not in sys.modules
+    rv = sys.modules[name] = ModuleType(name, cls.__doc__)
+    rv.__file__ = sys.modules[outer_mod].__file__
+    for k, v in cls.__dict__.items():
+        if k.startswith('_'):
+            continue
+        setattr(rv, k, v)
+    return rv
+
+
+def grammar_parse(source):
+    nonterminal_list = []
+    nonterminal_set = set()
     # not actually all
-    all_list = [] # type: List[str]
-    all_set = set() # type: Set[str]
+    all_list = []
+    all_set = set()
 
     for line in source.split('\n'):
         line = line.strip()
@@ -46,8 +51,8 @@ def grammar_parse(source: str) -> Grammar:
     grammar = Grammar.parse(symbols, source)
     return grammar
 
-def input_split(grammar: Grammar, source: str, split_char: Optional[str] = None) -> List[Terminal]:
-    rv = [] # type: List[Terminal]
+def input_split(grammar, source, split_char):
+    rv = []
     for word in source.split():
         if split_char is not None and split_char in word:
             sym, txt = word.split(split_char)
@@ -65,7 +70,7 @@ def input_split(grammar: Grammar, source: str, split_char: Optional[str] = None)
 class GrammarAndInputs:
     __slots__ = ('grammar', 'good_inputs', 'bad_inputs')
 
-    def __init__(self, grammar: str, good_inputs: List[Tuple[str, str]], short_inputs: List[str], bad_inputs: List[str], split: Optional[str]) -> None:
+    def __init__(self, grammar, good_inputs, short_inputs, bad_inputs, split):
         self.grammar = grammar_parse(grammar)
         self.good_inputs = [(input_split(self.grammar, i, split), o) for i, o in good_inputs]
         self.bad_inputs = [input_split(self.grammar, i, split) for i in short_inputs]

@@ -14,11 +14,9 @@ The automaton and runtime is frontend-agnostic.
 # Dependencies
 
 - Python 3.3 or later. Porting to 3.2 is possible but not important to me.
-- PEP 484 `typing` module (usually included with mypy).
 
 # Test Dependencies
 
-- mypy (o11c's fork may be needed for unmerged PRs).
 - pytest (to run tests).
 - pytest-cov (to include coverage information with tests).
 

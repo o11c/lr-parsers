@@ -1,9 +1,3 @@
-import typing
-
-from typing import (
-        List,
-)
-
 from .grammar import SymbolId, RuleId
 
 
@@ -13,11 +7,11 @@ class Value:
 class Terminal(Value):
     __slots__ = ('_text',)
 
-    def __init__(self, sym: SymbolId, text: str) -> None:
+    def __init__(self, sym, text):
         self._sym = sym
         self._text = text
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         sym = self._sym._data()._name
         text = self._text
         if sym == text or not text:
@@ -27,12 +21,12 @@ class Terminal(Value):
 class Nonterminal(Value):
     __slots__ = ('_rule', '_children')
 
-    def __init__(self, rule: RuleId, children: List[Value]) -> None:
+    def __init__(self, rule, children):
         self._sym = rule._data()._lhs
         self._rule = rule
         self._children = children
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         if len(self._children) == 1:
             return '.%r' % (self._children[0],)
         sym = self._sym._data()._name

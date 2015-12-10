@@ -1,11 +1,3 @@
-import typing
-
-from typing import (
-        Dict,
-        Iterator,
-        List,
-)
-
 import subprocess
 
 import lxml.etree as etree
@@ -29,15 +21,15 @@ has_bison_deprecated = subprocess.call([BISON, '-Wdeprecated', '--version']) == 
 class Item:
     __slots__ = ('_rule', '_index', '_lookahead')
 
-    def __init__(self, rule: RuleId, index: int, lookahead: List[SymbolId]) -> None:
+    def __init__(self, rule, index, lookahead):
         self._rule = rule
         self._index = index
         self._lookahead = lookahead
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return ' '.join(self._bits())
 
-    def _bits(self) -> Iterator[str]:
+    def _bits(self):
         rule = self._rule._data()
         yield '<'
         yield rule._lhs._data()._name
@@ -60,25 +52,25 @@ class Item:
 class ItemSet(AbstractItemSet):
     __slots__ = ('_items',)
 
-    def __init__(self, items: List[Item], automaton: Automaton) -> None:
+    def __init__(self, items, automaton):
         super().__init__(automaton)
         self._items = items
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         bits = '\n    '.join(self._bits())
         return '<bison.ItemSet #%d, size %d\n    %s\n>' % (self._state._id._number, len(self._items), bits)
 
-    def _bits(self) -> Iterator[str]:
+    def _bits(self):
         for it in self._items:
             yield repr(it)
 
-    def is_initial_state(self) -> bool:
+    def is_initial_state(self):
         return self._is_core_state(False) and self._items[0]._index == 0 # pragma: no cover
-    def is_penultimate_state(self) -> bool:
+    def is_penultimate_state(self):
         return self._is_core_state(False) and self._items[0]._index == 1 # pragma: no cover
-    def is_final_state(self) -> bool:
+    def is_final_state(self):
         return self._is_core_state(True) and self._items[0]._index == 2
-    def _is_core_state(self, final: bool) -> bool:
+    def _is_core_state(self, final):
         if final and len(self._items) != 1:
             return False # pragma: no cover
         rule = self._items[0]._rule._data()
@@ -89,7 +81,7 @@ class ItemSet(AbstractItemSet):
         return True
 
 
-def run_bison(grammar: Grammar, lr_type: str) -> etree._ElementTree:
+def run_bison(grammar, lr_type):
     args = [BISON, '/dev/stdin', '-o', '/dev/null', '--xml=/dev/stdout']
     args.extend(['-Werror', '-Wall'])
     if has_bison_deprecated:
@@ -102,7 +94,7 @@ def run_bison(grammar: Grammar, lr_type: str) -> etree._ElementTree:
         # Bug report here: https://lists.gnu.org/archive/html/bug-bison/2015-06/msg00001.html
         args.append('--feature=none')
     proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    def p(*s: str) -> None:
+    def p(*s):
         proc.stdin.writelines([x.encode('utf-8') for x in s] + [b'\n'])
     for sym in grammar._symbols._data[1:grammar._symbols._num_terminals]:
         assert sym._is_term
@@ -127,11 +119,11 @@ def run_bison(grammar: Grammar, lr_type: str) -> etree._ElementTree:
         raise LoweringError('bison failed maybe?') # pragma: no cover
     return rv
 
-def parse_bison(xml: etree._ElementTree) -> _bison_xml.BisonXmlReport:
+def parse_bison(xml):
     return _bison_xml.root(xml, _bison_xml.BisonXmlReport)
 
-def make_symbol_map(grammar: Grammar, bison_xml_report: _bison_xml.BisonXmlReport) -> Dict[str, SymbolId]:
-    symbol_map = {} # type: Dict[str, SymbolId]
+def make_symbol_map(grammar, bison_xml_report):
+    symbol_map = {}
     for t in bison_xml_report.grammar.terminals:
         name = t.name
         if name == '$end':
@@ -151,14 +143,14 @@ def make_symbol_map(grammar: Grammar, bison_xml_report: _bison_xml.BisonXmlRepor
             assert g_r is symbol_map[b_r]
     return symbol_map
 
-def compute_automaton(grammar: Grammar, lr_type: str) -> Automaton:
+def compute_automaton(grammar, lr_type):
     xml = run_bison(grammar, lr_type)
     bison_xml_report = parse_bison(xml)
     symbol_map = make_symbol_map(grammar, bison_xml_report)
     automaton = Automaton(grammar)
-    state_map = [] # type: List[ItemSet]
+    state_map = []
     for state in bison_xml_report.automaton:
-        items = [] # type: List[Item]
+        items = []
         for it in state.itemset:
             rule_id = grammar._data[it.rule]._id
             lookaheads = [symbol_map[x] for x in it.lookaheads]
@@ -193,11 +185,11 @@ def compute_automaton(grammar: Grammar, lr_type: str) -> Automaton:
 
     return automaton
 
-def compute_automaton_lalr(grammar: Grammar) -> Automaton:
+def compute_automaton_lalr(grammar):
     return compute_automaton(grammar, 'lalr')
 
-def compute_automaton_ielr1(grammar: Grammar) -> Automaton:
+def compute_automaton_ielr1(grammar):
     return compute_automaton(grammar, 'ielr')
 
-def compute_automaton_clr1(grammar: Grammar) -> Automaton:
+def compute_automaton_clr1(grammar):
     return compute_automaton(grammar, 'canonical-lr')

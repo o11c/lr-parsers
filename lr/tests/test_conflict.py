@@ -1,10 +1,8 @@
-import typing
-
 from lr.conflict import ConflictMap
 
 
-def test_conflict() -> None:
-    con = ConflictMap([1, 2, 3]) # type: ConflictMap[int, str]
+def test_conflict():
+    con = ConflictMap([1, 2, 3])
     con.add(1, 'a')
     con.add(1, 'b')
     con.add(2, 'c')
@@ -12,8 +10,8 @@ def test_conflict() -> None:
     assert good == {2: 'c'}
     assert bad == {1: ['a', 'b']}
 
-def test_default() -> None:
-    con = ConflictMap([1, 2, 3]) # type: ConflictMap[int, str]
+def test_default():
+    con = ConflictMap([1, 2, 3])
     con.add(1, 'a')
     con.add(2, 'c')
     con.add_default('d')
@@ -21,8 +19,8 @@ def test_default() -> None:
     assert good == {1: 'a', 2: 'c', 3: 'd'}
     assert bad == {}
 
-def test_conflict_default() -> None:
-    con = ConflictMap([1, 2, 3]) # type: ConflictMap[int, str]
+def test_conflict_default():
+    con = ConflictMap([1, 2, 3])
     con.add(1, 'a')
     con.add(2, 'c')
     con.add_default('d')

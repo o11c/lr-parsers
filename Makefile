@@ -1,5 +1,4 @@
 PYTHON=python3
-MYPY=mypy
 
 E =
 
@@ -7,14 +6,7 @@ E =
 all: prep
 prep:
 	${PYTHON} ./python-3-check.py
-	rm -rf htmlcov/ mypy-report/ .coverage
-	find lr/ -name 'test_*.py' | sed 's/\.py//;s:/:.:g;s/^/import /' > mypy-hack.py
-
-.PHONY: mypy
-all: mypy
-mypy: prep
-	${MYPY} --html-report mypy-report --xml-report mypy-report ./mypy-hack.py
-	$E ! xmllint mypy-report/index.xml --xpath '/mypy-report-index/file[@imprecise != "0" or @any != "0"]/@name'
+	rm -rf htmlcov/ .coverage
 
 .PHONY: coverage
 all: coverage

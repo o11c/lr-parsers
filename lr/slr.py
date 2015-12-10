@@ -1,17 +1,3 @@
-import typing
-
-from typing import (
-        Dict,
-        Iterator,
-        List,
-        NamedTuple,
-        Optional,
-        Sequence,
-        Set,
-        Tuple,
-)
-
-from ._mypy_bugs import as_tuple
 from .grammar import Grammar, RuleId, SymbolId
 from .automaton import Automaton, Action, Shift, Reduce, Goto, AbstractItemSet, StateId, raise_conflicts
 from .conflict import ConflictMap
@@ -24,14 +10,14 @@ _mdot = '\x1b[35m•\x1b[39m'
 class Item:
     __slots__ = ('_rule', '_index')
 
-    def __init__(self, rule: RuleId, index: int) -> None:
+    def __init__(self, rule, index):
         self._rule = rule
         self._index = index
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return ' '.join(self._bits())
 
-    def _bits(self) -> Iterator[str]:
+    def _bits(self):
         rule = self._rule._data()
         yield '<'
         yield rule._lhs._data()._name
@@ -43,10 +29,10 @@ class Item:
             yield r._data()._name
         yield '>'
 
-    def _kernel(self) -> Tuple[RuleId, int]:
+    def _kernel(self):
         return (self._rule, self._index)
 
-    def _next_sym(self) -> Optional[SymbolId]:
+    def _next_sym(self):
         rule = self._rule._data()
         index = self._index
         if len(rule._rhs) == index:
@@ -56,30 +42,30 @@ class Item:
 class ItemSet(AbstractItemSet):
     __slots__ = ('_items', '_kernel_size', '_prev_states')
 
-    def __init__(self, seeds: List[Item], automaton: Automaton) -> None:
+    def __init__(self, seeds, automaton):
         super().__init__(automaton)
         self._items = seeds
         self._kernel_size = len(seeds)
-        self._prev_states = [] # type: List[StateId]
+        self._prev_states = []
         self.close(automaton._grammar)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         origin = self._origin_str()
         bits = '\n  '.join(self._bits())
         return '<slr.ItemSet #%d, kernel %d/%d, %s\n  %s\n>' % (self._state._id._number, self._kernel_size, len(self._items), origin, bits)
 
-    def _origin_str(self) -> str:
+    def _origin_str(self):
         prev_states = sorted(self._prev_states, key=lambda x: x._number)
         prev_str = ', '.join([str(i._number) for i in prev_states])
         return '← (%s)' % (prev_str)
 
-    def _bits(self) -> Iterator[str]:
+    def _bits(self):
         for i, it in enumerate(self._items):
             s = '+ ' if i >= self._kernel_size else '* '
             yield '%s%r' % (s, it)
 
-    def close(self, grammar: Grammar) -> None:
-        rv_set = set() # type: Set[SymbolId]
+    def close(self, grammar):
+        rv_set = set()
 
         for it in self._items:
             rv = it._next_sym()
@@ -96,13 +82,13 @@ class ItemSet(AbstractItemSet):
             else:
                 assert rv._data()._is_term
 
-    def is_initial_state(self) -> bool:
+    def is_initial_state(self):
         return self._is_core_state(False) and self._items[0]._index == 0 # pragma: no cover
-    def is_penultimate_state(self) -> bool:
+    def is_penultimate_state(self):
         return self._is_core_state(False) and self._items[0]._index == 1 # pragma: no cover
-    def is_final_state(self) -> bool:
+    def is_final_state(self):
         return self._is_core_state(True) and self._items[0]._index == 2
-    def _is_core_state(self, final: bool) -> bool:
+    def _is_core_state(self, final):
         if final and len(self._items) != 1:
             return False # pragma: no cover
         rule = self._items[0]._rule._data()
@@ -115,11 +101,11 @@ class ItemSet(AbstractItemSet):
 class SlrJunk:
     __slots__ = ('follow', 'automaton', 'kernels', 'conflicts')
 
-    def __init__(self, grammar: Grammar) -> None:
+    def __init__(self, grammar):
         # key: nonterminal, value: terminal
-        first = {} # type: Dict[SymbolId, List[SymbolId]]
+        first = {}
         # key: nonterminal, value: terminal
-        self.follow = {} # type: Dict[SymbolId, List[SymbolId]]
+        self.follow = {}
 
         all_nonterminals = grammar.all_nonterminals()
 
@@ -132,15 +118,15 @@ class SlrJunk:
         self.automaton = Automaton(grammar)
 
         # initial state doesn't need to be cached since it can't be a successor
-        self.kernels = {} # type: Dict[Sequence[Tuple[RuleId, int]], ItemSet]
+        self.kernels = {}
 
-        self.conflicts = {} # type: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]
+        self.conflicts = {}
 
 
-def _calc_first(grammar: Grammar, sym: SymbolId) -> List[SymbolId]:
+def _calc_first(grammar, sym):
     assert not sym._data()._is_term
     sym_set = {sym}
-    first_terminals = [] # type: List[SymbolId]
+    first_terminals = []
     first_nonterminals = [sym]
 
     for sym in first_nonterminals:
@@ -157,11 +143,11 @@ def _calc_first(grammar: Grammar, sym: SymbolId) -> List[SymbolId]:
                 first_nonterminals.append(sym)
     return first_terminals
 
-def _calc_follow(grammar: Grammar, sym: SymbolId, first: Dict[SymbolId, List[SymbolId]]) -> List[SymbolId]:
+def _calc_follow(grammar, sym, first):
     assert not sym._data()._is_term
 
-    follow_terminals = [] # type: List[SymbolId]
-    follow_set = set() # type: Set[SymbolId]
+    follow_terminals = []
+    follow_set = set()
     prev_nonterminals = [sym]
     prev_set = {sym}
 
@@ -191,7 +177,7 @@ def _calc_follow(grammar: Grammar, sym: SymbolId, first: Dict[SymbolId, List[Sym
                         follow_terminals.append(sym3)
     return follow_terminals
 
-def _get_successor_state(istate: ItemSet, sym: SymbolId, junk: SlrJunk) -> ItemSet:
+def _get_successor_state(istate, sym, junk):
     follow = junk.follow
     automaton = junk.automaton
     kernels = junk.kernels
@@ -203,7 +189,7 @@ def _get_successor_state(istate: ItemSet, sym: SymbolId, junk: SlrJunk) -> ItemS
             for it in istate._items
             if it._next_sym() == sym
     ]
-    kernel = as_tuple([it._kernel() for it in seeds])
+    kernel = tuple([it._kernel() for it in seeds])
     if kernel in kernels:
         item_set = kernels[kernel]
         item_set._prev_states.append(istate._state._id)
@@ -213,18 +199,18 @@ def _get_successor_state(istate: ItemSet, sym: SymbolId, junk: SlrJunk) -> ItemS
     _do_state(item_set, junk)
     return item_set
 
-def _do_state(istate: ItemSet, junk: SlrJunk) -> None:
+def _do_state(istate, junk):
     follow = junk.follow
     automaton = junk.automaton
     kernels = junk.kernels
     conflicts = junk.conflicts
     grammar = automaton._grammar
 
-    shift_syms = [] # type: List[SymbolId]
-    goto_syms = [] # type: List[SymbolId]
-    shift_items = {} # type: Dict[SymbolId, List[Item]]
-    goto_items = {} # type: Dict[SymbolId, List[Item]]
-    actions = ConflictMap(grammar.all_terminals()) # type: ConflictMap[SymbolId, Action]
+    shift_syms = []
+    goto_syms = []
+    shift_items = {}
+    goto_items = {}
+    actions = ConflictMap(grammar.all_terminals())
 
     for item in istate._items:
         sym = item._next_sym()
@@ -252,7 +238,7 @@ def _do_state(istate: ItemSet, junk: SlrJunk) -> None:
     if rv:
         conflicts[istate] = rv
 
-def compute_automaton(grammar: Grammar) -> Automaton:
+def compute_automaton(grammar):
     junk = SlrJunk(grammar)
 
     root_item = Item(grammar._data[0]._id, 0)

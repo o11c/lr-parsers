@@ -1,72 +1,70 @@
-import typing
-
-from typing import (
-        Callable,
-        Dict,
-        List,
-        Optional,
-        TypeVar,
-)
-
-from ._mypy_bugs import identity, AutoRepr
-
 import lxml.etree as etree
 
 
-T = TypeVar('T')
+def xml_identity(obj): return obj
 
-xml_identity = typing.cast(Callable[[etree._Element], etree._Element], identity)
+
+class AutoRepr:
+    __slots__ = ()
+
+    def __repr__(self):
+        slots = []                                                          # pragma: no cover
+        for cls in self.__class__.mro()[:-1]:                               # pragma: no cover
+            slots.extend(cls.__slots__)                                     # pragma: no cover
+        name = self.__class__.__name__                                      # pragma: no cover
+        members = ', '.join('%s=%r' % (x, getattr(self, x)) for x in slots) # pragma: no cover
+        return '<%s(%s)>' % (name, members)                                 # pragma: no cover
 
 
 # TODO Use `enum` for assoc and usefulness.
 
 
-def attr(xml: etree._Element, name: str, cls: Callable[[str], T]) -> T:
+def attr(xml, name, cls):
     return cls(xml.attrib[name])
 
-def opt_attr(xml: etree._Element, name: str, cls: Callable[[str], T]) -> Optional[T]:
+def opt_attr(xml, name, cls):
     attr = xml.attrib.get(name)
     if attr is None:
         return None
     return cls(attr) # pragma: no cover
 
-def child(xml: etree._Element, name: str, cls: Callable[[etree._Element], T]) -> T:
+def child(xml, name, cls):
     rv = children(xml, name, cls)
     assert len(rv) == 1
     return rv[0]
 
-def opt_child(xml: etree._Element, name: str, cls: Callable[[etree._Element], T]) -> Optional[T]:
+def opt_child(xml, name, cls):
     rv = children(xml, name, cls)
     if not rv:
         return None
     assert len(rv) == 1
     return rv[0]
 
-def children(xml: etree._Element, name: str, cls: Callable[[etree._Element], T]) -> List[T]:
+def children(xml, name, cls):
     return [cls(c) for c in xml.iterchildren(name)]
 # There is no need for opt_children; it DTRT when there is nothing.
 
-def inner_children(xml: etree._Element, name1: str, name2: str, cls: Callable[[etree._Element], T]) -> List[T]:
+def inner_children(xml, name1, name2, cls):
     xml_tmp = child(xml, name1, xml_identity)
     return children(xml_tmp, name2, cls)
 
-def opt_inner_children(xml: etree._Element, name1: str, name2: str, cls: Callable[[etree._Element], T]) -> List[T]:
+def opt_inner_children(xml, name1, name2, cls):
     xml_tmp = opt_child(xml, name1, xml_identity)
     if xml_tmp is None:
-        return typing.cast(List[T], [])
+        return []
     return children(xml_tmp, name2, cls)
 
-def root(xml: etree._ElementTree, cls: Callable[[etree._Element], T]) -> T:
+def root(xml, cls):
     return cls(xml.getroot())
 
 
-def String(xml: etree._Element) -> str:
+def String(xml):
     return xml.text
 
 class BisonXmlReport(AutoRepr):
     __slots__ = ('version', 'bug_report', 'url', 'filename', 'grammar', 'automaton')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.version = attr(xml, 'version', str)
         self.bug_report = attr(xml, 'bug-report', str)
         self.url = attr(xml, 'url', str)
@@ -77,7 +75,7 @@ class BisonXmlReport(AutoRepr):
 class Grammar(AutoRepr):
     __slots__ = ('rules', 'terminals', 'nonterminals')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.rules = inner_children(xml, 'rules', 'rule', Rule)
         self.terminals = inner_children(xml, 'terminals', 'terminal', Terminal)
         self.nonterminals = inner_children(xml, 'nonterminals', 'nonterminal', Nonterminal)
@@ -85,7 +83,7 @@ class Grammar(AutoRepr):
 class Rule(AutoRepr):
     __slots__ = ('number', 'usefulness', 'lhs', 'rhs')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.number = attr(xml, 'number', int)
         self.usefulness = attr(xml, 'usefulness', str)
         self.lhs = child(xml, 'lhs', String)
@@ -94,7 +92,7 @@ class Rule(AutoRepr):
 class Terminal(AutoRepr):
     __slots__ = ('symbol_number', 'token_number', 'name', 'usefulness', 'prec', 'assoc')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.symbol_number = attr(xml, 'symbol-number', int)
         self.token_number = attr(xml, 'token-number', int)
         self.name = attr(xml, 'name', str)
@@ -105,7 +103,7 @@ class Terminal(AutoRepr):
 class Nonterminal(AutoRepr):
     __slots__ = ('symbol_number', 'name', 'usefulness')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.symbol_number = attr(xml, 'symbol-number', int)
         self.name = attr(xml, 'name', str)
         self.usefulness = attr(xml, 'usefulness', str)
@@ -113,7 +111,7 @@ class Nonterminal(AutoRepr):
 class State(AutoRepr):
     __slots__ = ('number', 'itemset', 'actions', 'solved_conflicts')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.number = attr(xml, 'number', int)
         self.itemset = inner_children(xml, 'itemset', 'item', Item)
         self.actions = child(xml, 'actions', Actions)
@@ -122,7 +120,7 @@ class State(AutoRepr):
 class Item(AutoRepr):
     __slots__ = ('rule', 'point', 'lookaheads')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.rule = attr(xml, 'rule-number', int)
         self.point = attr(xml, 'point', int)
         self.lookaheads = opt_inner_children(xml, 'lookaheads', 'symbol', String)
@@ -130,7 +128,7 @@ class Item(AutoRepr):
 class Actions(AutoRepr):
     __slots__ = ('transitions', 'errors', 'reductions')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.transitions = inner_children(xml, 'transitions', 'transition', GetTransition)
         self.errors = inner_children(xml, 'errors', 'error', Error)
         self.reductions = inner_children(xml, 'reductions', 'reduction', Reduction)
@@ -138,10 +136,7 @@ class Actions(AutoRepr):
 class TransitionBase(AutoRepr):
     __slots__ = ('symbol', 'state')
 
-    if False:
-        type = None # type: str
-
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.symbol = attr(xml, 'symbol', str)
         self.state = attr(xml, 'state', int)
 
@@ -155,42 +150,39 @@ class ShiftTransition(TransitionBase):
 
     type = 'shift'
 
-_transition_types = {'goto': GotoTransition, 'shift': ShiftTransition} # type: Dict[str, Callable[[etree._Element], TransitionBase]]
+_transition_types = {'goto': GotoTransition, 'shift': ShiftTransition}
 
-def GetTransition(xml: etree._Element) -> TransitionBase:
+def GetTransition(xml):
     type = attr(xml, 'type', str)
     return _transition_types[type](xml)
 
 class Error(AutoRepr):
     __slots__ = ('symbol', 'content')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.symbol = attr(xml, 'symbol', str) # pragma: no cover
         self.content = String(xml)             # pragma: no cover
 
 class Reduction(AutoRepr):
     __slots__ = ('symbol', 'rule', 'enabled')
 
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.symbol = attr(xml, 'symbol', str)
         self.rule = attr(xml, 'rule', IntOrAccept)
         self.enabled = attr(xml, 'enabled', Bool)
 
-def IntOrAccept(text: str) -> int:
+def IntOrAccept(text):
     if text == 'accept':
         return 0
     return int(text)
 
-def Bool(text: str) -> int:
+def Bool(text):
     return {'true': True, 'false': False}[text]
 
 class ResolutionBase(AutoRepr):
     __slots__ = ('rule', 'symbol', 'content')
 
-    if False:
-        type = None # type: str
-
-    def __init__(self, xml: etree._Element) -> None:
+    def __init__(self, xml):
         self.rule = attr(xml, 'rule', int)     # pragma: no cover
         self.symbol = attr(xml, 'symbol', str) # pragma: no cover
         self.content = String(xml)             # pragma: no cover
@@ -210,8 +202,8 @@ class ErrorResolution(ResolutionBase):
 
     type = 'error'
 
-_resolution_types = {'shift': ShiftResolution, 'reduce': ReduceResolution, 'error': ErrorResolution} # type: Dict[str, Callable[[etree._Element], ResolutionBase]]
+_resolution_types = {'shift': ShiftResolution, 'reduce': ReduceResolution, 'error': ErrorResolution}
 
-def GetResolution(xml: etree._Element) -> ResolutionBase:
+def GetResolution(xml):
     type = attr(xml, 'type', str)       # pragma: no cover
     return _resolution_types[type](xml) # pragma: no cover

@@ -1,13 +1,3 @@
-import typing
-
-from typing import (
-        Dict,
-        Iterable,
-        List,
-        Tuple,
-        TypeVar,
-)
-
 from abc import ABCMeta, abstractmethod
 import weakref
 
@@ -24,19 +14,19 @@ class Action(BaseAction):
 class Shift(Action):
     __slots__ = ('_state',)
 
-    def __init__(self, state: 'StateId') -> None:
+    def __init__(self, state):
         self._state = state
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return 'Shift(<state %d>)' % (self._state._number)
 
 class Reduce(Action):
     __slots__ = ('_rule',)
 
-    def __init__(self, rule: RuleId) -> None:
+    def __init__(self, rule):
         self._rule = rule
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return 'Reduce(<rule %d>)' % (self._rule._number)
 
 # The Python implementation uses dicts for actions.
@@ -46,75 +36,74 @@ class Reduce(Action):
 class Goto(BaseAction):
     __slots__ = ('_state',)
 
-    def __init__(self, state: 'StateId') -> None:
+    def __init__(self, state):
         self._state = state
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return 'Goto(<state %d>)' % (self._state._number)
 
 
 class StateId:
     __slots__ = ('_number', '_info')
 
-    def __init__(self, number: int, info: 'Automaton') -> None:
-        self._number = number # type: int
+    def __init__(self, number, info):
+        self._number = number
         self._info = weakref.ref(info)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return '<StateId for %r>' % (self._data(),)
 
-    def _data(self) -> 'StateData':
+    def _data(self):
         return self._info()._data[self._number]
 
 class StateData:
     __slots__ = ('_id', '_actions', '_gotos', '_creator')
 
-    def __init__(self, id: StateId, creator: 'AbstractItemSet') -> None:
+    def __init__(self, id, creator):
         self._id = id
-        self._actions = {} # type: Dict[SymbolId, Action]
-        self._gotos = {} # type: Dict[SymbolId, Goto]
+        self._actions = {}
+        self._gotos = {}
         self._creator = creator
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return '<StateData #%d with %d actions, %d gotos\n  %r>' % (self._id._number, len(self._actions), len(self._gotos), self._creator)
 
 class Automaton:
     __slots__ = ('_data', '_grammar', '__weakref__')
 
-    def __init__(self, grammar: Grammar) -> None:
-        self._data = [] # type: List[StateData]
+    def __init__(self, grammar):
+        self._data = []
         self._grammar = grammar
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return '<Automaton with %d states>' % (len(self._data))
 
-    def add_state(self, creator: 'AbstractItemSet') -> StateData:
+    def add_state(self, creator):
         i = len(self._data)
         rv = StateData(StateId(i, self), creator)
         self._data.append(rv)
         return rv
 
-    def get_state0(self) -> StateId:
+    def get_state0(self):
         return self._data[0]._id
 
 class AbstractItemSet(metaclass=ABCMeta):
     __slots__ = ('_state',)
 
-    def __init__(self, automaton: Automaton) -> None:
+    def __init__(self, automaton):
         self._state = automaton.add_state(self)
 
     @abstractmethod
-    def is_initial_state(self) -> bool:
+    def is_initial_state(self):
         pass # pragma: no cover
     @abstractmethod
-    def is_penultimate_state(self) -> bool:
+    def is_penultimate_state(self):
         pass # pragma: no cover
     @abstractmethod
-    def is_final_state(self) -> bool:
+    def is_final_state(self):
         pass # pragma: no cover
 
-# TODO clean callers after https://github.com/JukkaL/mypy/issues/689
-def raise_conflicts(conflicts: Dict[AbstractItemSet, Dict[SymbolId, List[Action]]]) -> None:
+def raise_conflicts(conflicts):
     if not conflicts:
         return
     conflict_lines = ['conflicts in %d states:' % len(conflicts)]

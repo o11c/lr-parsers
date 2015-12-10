@@ -1,5 +1,3 @@
-import typing
-
 import pytest
 
 from lr.error import InputError, LoweringError
@@ -7,14 +5,14 @@ from lr.grammar import Grammar
 from lr.runtime import Runtime
 from lr.lalr import compute_automaton, _mdot, _parallel
 
-from ._mypy_bugs2 import parm_tests
+from ._util import parm_tests
 from . import grammar_examples
 from .grammar_examples import GrammarAndInputs
 
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.lr0)
-def test_lalr_lr0(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lalr_lr0(grammar_and_inputs):
     grammar = grammar_and_inputs.grammar
     automaton = compute_automaton(grammar)
 
@@ -31,7 +29,7 @@ def test_lalr_lr0(grammar_and_inputs: GrammarAndInputs) -> None:
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.slr)
-def test_lalr_slr(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lalr_slr(grammar_and_inputs):
     grammar = grammar_and_inputs.grammar
     automaton = compute_automaton(grammar)
 
@@ -48,7 +46,7 @@ def test_lalr_slr(grammar_and_inputs: GrammarAndInputs) -> None:
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.lalr)
-def test_lalr_lalr(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lalr_lalr(grammar_and_inputs):
     grammar = grammar_and_inputs.grammar
     automaton = compute_automaton(grammar)
 
@@ -65,27 +63,27 @@ def test_lalr_lalr(grammar_and_inputs: GrammarAndInputs) -> None:
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.lr1)
-def test_lalr_lr1(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lalr_lr1(grammar_and_inputs):
     grammar = grammar_and_inputs.grammar
     with pytest.raises(LoweringError):
         automaton = compute_automaton(grammar)
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.lr2)
-def test_lalr_lr2(grammar_and_inputs: GrammarAndInputs) -> None:
+def test_lalr_lr2(grammar_and_inputs):
     grammar = grammar_and_inputs.grammar
     with pytest.raises(LoweringError):
         automaton = compute_automaton(grammar)
 
 @pytest.mark.xfail
 @parm_tests(grammar_examples.ambiguous)
-def test_lalr_ambiguous(grammar_and_inputs: Grammar) -> None:
+def test_lalr_ambiguous(grammar_and_inputs):
     grammar = grammar_and_inputs
     with pytest.raises(LoweringError):
         automaton = compute_automaton(grammar)
 
 @pytest.mark.xfail
-def test_lalr_repr_automaton_lr0() -> None:
+def test_lalr_repr_automaton_lr0():
     ex = grammar_examples.lr0.ex_minimal1
     grammar = ex.grammar
 
@@ -119,7 +117,7 @@ def test_lalr_repr_automaton_lr0() -> None:
     assert repr(next(iter(automaton._data[0]._gotos.values()))) == 'Goto(<state 2>)'
 
 @pytest.mark.xfail
-def test_lalr_repr_automaton_lalr() -> None:
+def test_lalr_repr_automaton_lalr():
     ex = grammar_examples.lalr.ex1
     grammar = ex.grammar
 
@@ -196,7 +194,7 @@ def test_lalr_repr_automaton_lalr() -> None:
 '''.strip().replace('•', _mdot).replace('∥', _parallel)
 
 @pytest.mark.xfail
-def test_lalr_repr_runtime() -> None:
+def test_lalr_repr_runtime():
     ex = grammar_examples.lr0.ex_minimal1
     grammar = ex.grammar
     input, output = ex.good_inputs[0]

@@ -1,5 +1,3 @@
-import typing
-
 from .grammar import Grammar
 from .automaton import Automaton
 
@@ -19,5 +17,5 @@ _parallel = '\x1b[32m∥\x1b[39m'
 #       versions, a 2008 one and a 2010 one. There are few implementations.
 #       Conflict resolution was the motivating factor.
 
-def compute_automaton(grammar: Grammar) -> Automaton:
+def compute_automaton(grammar):
     raise NotImplementedError

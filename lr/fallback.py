@@ -1,5 +1,3 @@
-import typing
-
 from .error import LrParserException
 from .grammar import Grammar
 from .automaton import Automaton
@@ -13,7 +11,7 @@ from . import lr0, slr, lalr, lr1
 
 # Fallback would be much more complicated if I did LL parsers too.
 
-def compute_automaton(grammar: Grammar) -> Automaton:
+def compute_automaton(grammar):
     funcs = [
             lr0.compute_automaton,
             slr.compute_automaton,

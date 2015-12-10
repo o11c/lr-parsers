@@ -4,9 +4,5 @@ pytest>=2.6.3
 # Lowest tested version; earlier versions may work.
 pytest-cov>=1.8.1
 
-# Requires pull requests that are not merged yet.
-#git+git://github.com/JukkaL/mypy.git
-git+git://github.com/o11c/mypy.git
-
 # Guessed based on API usage. To avoid bugs, use latest possible.
 lxml>=3.1.2
