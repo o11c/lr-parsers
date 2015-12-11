@@ -64,30 +64,30 @@ def test_lr0_repr_automaton():
     assert repr(automaton) == '<Automaton with 4 states>'
     assert repr(automaton._data) == '''
 [<StateData #0 with 1 actions, 1 gotos
-  <lr0.ItemSet #0, kernel 1/2, ← ()
+  <lr0.ItemSet #0, kernel 1/2, ← () [initial]
   * < $accept → • Root $eof >
   + < Root → • term >
->>, <StateData #1 with 1 actions, 0 gotos
+>>, <StateData #1 with 2 actions, 0 gotos
   <lr0.ItemSet #1, kernel 1/1, ← (0)
-  * < $accept → Root • $eof >
->>, <StateData #2 with 2 actions, 0 gotos
-  <lr0.ItemSet #2, kernel 1/1, ← (1)
-  * < $accept → Root $eof • >
->>, <StateData #3 with 2 actions, 0 gotos
-  <lr0.ItemSet #3, kernel 1/1, ← (0)
   * < Root → term • >
+>>, <StateData #2 with 1 actions, 0 gotos
+  <lr0.ItemSet #2, kernel 1/1, ← (0) [penultimate]
+  * < $accept → Root • $eof >
+>>, <StateData #3 with 2 actions, 0 gotos
+  <lr0.ItemSet #3, kernel 1/1, ← (2) [final]
+  * < $accept → Root $eof • >
 >>]
     '''.strip().replace('•', _mdot)
     assert repr(automaton._data[0]._id) == '''
 <StateId for <StateData #0 with 1 actions, 1 gotos
-  <lr0.ItemSet #0, kernel 1/2, ← ()
+  <lr0.ItemSet #0, kernel 1/2, ← () [initial]
   * < $accept → • Root $eof >
   + < Root → • term >
 >>>
 '''.strip().replace('•', _mdot)
-    assert repr(next(iter(automaton._data[0]._actions.values()))) == 'Shift(<state 3>)'
-    assert repr(next(iter(automaton._data[-1]._actions.values()))) == 'Reduce(<rule 1>)'
-    assert repr(next(iter(automaton._data[0]._gotos.values()))) == 'Goto(<state 1>)'
+    assert repr(next(iter(automaton._data[0]._actions.values()))) == 'Shift(<state 1>)'
+    assert repr(next(iter(automaton._data[1]._actions.values()))) == 'Reduce(<rule 1>)'
+    assert repr(next(iter(automaton._data[0]._gotos.values()))) == 'Goto(<state 2>)'
 
 def test_lr0_repr_runtime():
     ex = grammar_examples.lr0.ex_minimal1
@@ -98,7 +98,7 @@ def test_lr0_repr_runtime():
     runtime = Runtime(automaton)
     assert repr(runtime) == '<Runtime in state #0/4 with 0 values>'
     runtime.feed(input[0])
-    assert repr(runtime) == '<Runtime in state #3/4 with 1 values>'
+    assert repr(runtime) == '<Runtime in state #1/4 with 1 values>'
     runtime.feed(input[1])
-    # Goes to state 1 internally
-    assert repr(runtime) == '<Runtime in state #2/4 with 2 values>'
+    # Goes to state 2 internally
+    assert repr(runtime) == '<Runtime in state #3/4 with 2 values>'

@@ -1,5 +1,5 @@
 from .grammar import Grammar, RuleId, SymbolId
-from .automaton import Automaton, Action, Shift, Reduce, Goto, AbstractItemSet, StateId, raise_conflicts
+from .automaton import Automaton, Shift, Reduce, Goto, AbstractItemSet, StateId, raise_conflicts
 from .conflict import ConflictMap
 
 
@@ -57,6 +57,16 @@ class ItemSet(AbstractItemSet):
     def _origin_str(self):
         prev_states = sorted(self._prev_states, key=lambda x: x._number)
         prev_str = ', '.join([str(i._number) for i in prev_states])
+        extra = []
+        if self.is_initial_state():
+            extra.append('initial')
+        if self.is_penultimate_state():
+            extra.append('penultimate')
+        if self.is_final_state():
+            extra.append('final')
+        assert len(extra) <= 1
+        if extra:
+            return '← (%s) [%s]' % (prev_str, extra[0])
         return '← (%s)' % (prev_str)
 
     def _bits(self):
@@ -83,19 +93,17 @@ class ItemSet(AbstractItemSet):
                 assert rv._data()._is_term
 
     def is_initial_state(self):
-        return self._is_core_state(False) and self._items[0]._index == 0 # pragma: no cover
+        return self._is_core_state(False) and self._items[0]._index == 0
     def is_penultimate_state(self):
-        return self._is_core_state(False) and self._items[0]._index == 1 # pragma: no cover
+        return self._is_core_state(False) and self._items[0]._index == 1
     def is_final_state(self):
         return self._is_core_state(True) and self._items[0]._index == 2
     def _is_core_state(self, final):
         if final and len(self._items) != 1:
-            return False # pragma: no cover
+            return False
         rule = self._items[0]._rule._data()
-        if len(rule._rhs) != 2:
-            return False # pragma: no cover
         if rule._rhs[-1]._number != 0:
-            return False # pragma: no cover
+            return False
         return True
 
 class SlrJunk:
@@ -190,8 +198,8 @@ def _get_successor_state(istate, sym, junk):
             if it._next_sym() == sym
     ]
     kernel = tuple([it._kernel() for it in seeds])
-    if kernel in kernels:
-        item_set = kernels[kernel]
+    item_set = kernels.get(kernel)
+    if item_set:
         item_set._prev_states.append(istate._state._id)
         return item_set
     kernels[kernel] = item_set = ItemSet(seeds, automaton)
@@ -215,8 +223,9 @@ def _do_state(istate, junk):
     for item in istate._items:
         sym = item._next_sym()
         if sym is None:
+            act = Reduce(item._rule)
             for sym in follow[item._rule._data()._lhs]:
-                actions.add(sym, Reduce(item._rule))
+                actions.add(sym, act)
         else:
             if sym._data()._is_term:
                 tmp_items = shift_items.setdefault(sym, [])
@@ -233,6 +242,7 @@ def _do_state(istate, junk):
         actions.add(sym, Shift(succ_state._state._id))
     for sym in goto_syms:
         succ_state = _get_successor_state(istate, sym, junk)
+        assert sym not in istate._state._gotos
         istate._state._gotos[sym] = Goto(succ_state._state._id)
     istate._state._actions, rv = actions.finish()
     if rv:

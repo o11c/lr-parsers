@@ -16,6 +16,7 @@ class AutoRepr:
         return '<%s(%s)>' % (name, members)                                 # pragma: no cover
 
 
+# TODO Finish coverage by feeding known-bad grammars.
 # TODO Use `enum` for assoc and usefulness.
 
 

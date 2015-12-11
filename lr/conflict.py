@@ -1,13 +1,14 @@
 class ConflictMap:
-    __slots__ = ('_keys', '_data', '_default')
+    __slots__ = ('_keys', '_key_set', '_data', '_default')
 
     def __init__(self, keys):
         self._keys = keys
+        self._key_set = set(keys)
         self._data = {}
         self._default = []
 
     def add(self, k, v):
-        assert k in self._keys
+        assert k in self._key_set
         self._data.setdefault(k, []).append(v)
 
     def add_default(self, v):

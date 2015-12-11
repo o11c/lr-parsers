@@ -74,23 +74,23 @@ def test_slr_repr_automaton():
     assert repr(automaton) == '<Automaton with 4 states>'
     assert repr(automaton._data) == '''
 [<StateData #0 with 1 actions, 1 gotos
-  <slr.ItemSet #0, kernel 1/2, ← ()
+  <slr.ItemSet #0, kernel 1/2, ← () [initial]
   * < $accept → • Root $eof >
   + < Root → • term >
 >>, <StateData #1 with 1 actions, 0 gotos
   <slr.ItemSet #1, kernel 1/1, ← (0)
   * < Root → term • >
 >>, <StateData #2 with 1 actions, 0 gotos
-  <slr.ItemSet #2, kernel 1/1, ← (0)
+  <slr.ItemSet #2, kernel 1/1, ← (0) [penultimate]
   * < $accept → Root • $eof >
 >>, <StateData #3 with 0 actions, 0 gotos
-  <slr.ItemSet #3, kernel 1/1, ← (2)
+  <slr.ItemSet #3, kernel 1/1, ← (2) [final]
   * < $accept → Root $eof • >
 >>]
     '''.strip().replace('•', _mdot)
     assert repr(automaton._data[0]._id) == '''
 <StateId for <StateData #0 with 1 actions, 1 gotos
-  <slr.ItemSet #0, kernel 1/2, ← ()
+  <slr.ItemSet #0, kernel 1/2, ← () [initial]
   * < $accept → • Root $eof >
   + < Root → • term >
 >>>
@@ -110,5 +110,5 @@ def test_slr_repr_runtime():
     runtime.feed(input[0])
     assert repr(runtime) == '<Runtime in state #1/4 with 1 values>'
     runtime.feed(input[1])
-    # Goes to state 1 internally
+    # Goes to state 2 internally
     assert repr(runtime) == '<Runtime in state #3/4 with 2 values>'
