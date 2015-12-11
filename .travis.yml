@@ -1,4 +1,11 @@
 language: python
+sudo: false
+addons:
+  apt:
+    packages:
+      - bison
+      - libxml2-dev
+      - libxslt1-dev
 
 python:
   # Pypy3 (as of 2.4.0; the 2.6 release is only of Pypy2):
@@ -23,7 +30,6 @@ notifications:
     use_notice: true
 
 install:
-  - sudo apt-get install bison libxml2-dev libxslt1-dev
   - pip install -r requirements.txt
 script:
   - make -k -j`nproc` E=-
